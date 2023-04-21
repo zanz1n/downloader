@@ -11,7 +11,7 @@ import (
 )
 
 type TcpServer struct {
-	conns   map[uint64]net.Conn
+	conns   map[uint64]*net.Conn
 	connCtr uint64
 	NetLn   net.Listener
 	handler func(conn net.Conn) error
@@ -21,7 +21,7 @@ type TcpServer struct {
 
 func NewServer() *TcpServer {
 	return &TcpServer{
-		conns:   make(map[uint64]net.Conn),
+		conns:   make(map[uint64]*net.Conn),
 		connCtr: 0,
 		handler: func(conn net.Conn) error {
 			return nil
@@ -35,7 +35,7 @@ func (s *TcpServer) GetConn(id uint64) net.Conn {
 	s.ConnsM.Lock()
 	defer s.ConnsM.Unlock()
 	if conn, ok := s.conns[id]; ok {
-		return conn
+		return *conn
 	} else {
 		return nil
 	}
@@ -49,7 +49,7 @@ func (s *TcpServer) GetConns() []net.Conn {
 	defer s.ConnsM.Unlock()
 
 	for _, conn := range s.conns {
-		conns[i] = conn
+		conns[i] = *conn
 		i++
 	}
 	return conns
@@ -65,7 +65,7 @@ func (s *TcpServer) addConn(conn net.Conn) uint64 {
 
 	s.connCtr++
 	i := s.connCtr
-	s.conns[i] = conn
+	s.conns[i] = &conn
 
 	return i
 }
