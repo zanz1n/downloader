@@ -17,12 +17,14 @@ type ConfigFileSSL struct {
 }
 
 type ConfigFile struct {
-	SSL  ConfigFileSSL `json:"ssl" validate:"required"`
-	Port uint16        `json:"port" validate:"required"`
+	Port       uint16        `json:"port" validate:"required"`
+	ManagerKey string        `json:"manager_key"`
+	SSL        ConfigFileSSL `json:"ssl" validate:"required"`
 }
 
 type Config struct {
 	Port        uint16
+	ManagerKey  string
 	UseSSL      bool
 	SSLCertPath string
 	SSLKeyPath  string
@@ -105,13 +107,18 @@ func setupFromFile(file string) error {
 		return err
 	}
 
+	if len(config.ManagerKey) < 1 {
+		return fmt.Errorf("manager key is empty")
+	}
+
 	configInstance = &Config{
 		Port:        config.Port,
 		UseSSL:      config.SSL.Enable,
 		SSLCertPath: cert,
 		SSLKeyPath:  key,
+		ManagerKey:  config.ManagerKey,
 	}
-	
+
 	return nil
 }
 
