@@ -5,4 +5,5 @@ import (
 )
 
 func NewRouter(app *fiber.App) {
+	app.Get("/stats", GetStats())
 }
