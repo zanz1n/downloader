@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/zanz1n/downloader/node/routes"
 	"github.com/zanz1n/downloader/node/services"
 )
 
@@ -32,6 +33,8 @@ func main() {
 
 	app.Use(recover.New())
 	app.Use(cors.New())
+
+	routes.NewRouter(app)
 
 	if config.UseSSL {
 		err := app.ListenTLS(fmt.Sprintf("0.0.0.0:%v", config.Port), config.SSLCertPath, config.SSLKeyPath)
