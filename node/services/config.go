@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -18,8 +17,8 @@ type ConfigFileSSL struct {
 }
 
 type ConfigFile struct {
-	SSL  ConfigFileSSL `json:"ssl"`
-	Port uint16        `json:"port"`
+	SSL  ConfigFileSSL `json:"ssl" validate:"required"`
+	Port uint16        `json:"port" validate:"required"`
 }
 
 type Config struct {
@@ -100,13 +99,19 @@ func setupFromFile(file string) error {
 		return err
 	}
 
+	key, cert, err := validateSSL(config.SSL.KeyPath, config.SSL.CertPath)
+
+	if err != nil {
+		return err
+	}
+
 	configInstance = &Config{
 		Port:        config.Port,
 		UseSSL:      config.SSL.Enable,
-		SSLCertPath: config.SSL.CertPath,
-		SSLKeyPath:  config.SSL.KeyPath,
+		SSLCertPath: cert,
+		SSLKeyPath:  key,
 	}
-
+	
 	return nil
 }
 
@@ -114,11 +119,10 @@ func GetConfig() Config {
 	if configInstance != nil {
 		return *configInstance
 	} else {
-		for _, arg := range os.Args {
-			if strings.HasPrefix(arg, "--config=") {
-				if argsp := strings.Split(arg, "="); len(argsp) >= 2 {
-					method := argsp[1]
-
+		for i, arg := range os.Args {
+			if arg == "--config" {
+				if len(os.Args) > i {
+					method := os.Args[i+1]
 					if method == "env" {
 						if err := setupFromEnv(); err != nil {
 							log.Fatalln(err)
@@ -128,6 +132,7 @@ func GetConfig() Config {
 						if err := setupFromFile(method); err != nil {
 							log.Fatalln(err)
 						}
+						return *configInstance
 					}
 				}
 				break
@@ -135,6 +140,6 @@ func GetConfig() Config {
 		}
 	}
 
-	log.Fatalln("--config=<opt> arg must be provided and the options are: env, the path of the config file")
+	log.Fatalln("--config <opt> arg must be provided and the options are: env, the path of the config file")
 	panic("")
 }
