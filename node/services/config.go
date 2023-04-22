@@ -19,12 +19,14 @@ type ConfigFileSSL struct {
 type ConfigFile struct {
 	Port       uint16        `json:"port" validate:"required"`
 	ManagerKey string        `json:"manager_key"`
+	JwtKey     string        `json:"jwt_key" validate:"required"`
 	SSL        ConfigFileSSL `json:"ssl" validate:"required"`
 }
 
 type Config struct {
 	Port        uint16
 	ManagerKey  string
+	JwtKey      string
 	UseSSL      bool
 	SSLCertPath string
 	SSLKeyPath  string
@@ -77,6 +79,12 @@ func setupFromEnv() error {
 		configInstance.SSLCertPath = cert
 	} else {
 		configInstance.UseSSL = false
+	}
+
+	if jwtKey := os.Getenv("JWT_KEY"); jwtKey == "" {
+		return fmt.Errorf("jwt key is required")
+	} else {
+		configInstance.JwtKey = jwtKey
 	}
 
 	return nil
