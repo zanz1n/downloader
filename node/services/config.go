@@ -19,6 +19,7 @@ type ConfigFileSSL struct {
 type ConfigFile struct {
 	Port       uint16        `json:"port" validate:"required"`
 	ManagerKey string        `json:"manager_key"`
+	DataPath   string        `json:"data_path" validate:"required"`
 	JwtKey     string        `json:"jwt_key" validate:"required"`
 	SSL        ConfigFileSSL `json:"ssl" validate:"required"`
 }
@@ -26,6 +27,7 @@ type ConfigFile struct {
 type Config struct {
 	Port        uint16
 	ManagerKey  string
+	DataPath    string
 	JwtKey      string
 	UseSSL      bool
 	SSLCertPath string
@@ -93,6 +95,12 @@ func setupFromEnv() error {
 		configInstance.JwtKey = jwtKey
 	}
 
+	if dataPath := os.Getenv("DATA_PATH"); dataPath == "" {
+		return fmt.Errorf("jwt key is required")
+	} else {
+		configInstance.DataPath = dataPath
+	}
+
 	return nil
 }
 
@@ -131,6 +139,7 @@ func setupFromFile(file string) error {
 		SSLCertPath: cert,
 		SSLKeyPath:  key,
 		ManagerKey:  config.ManagerKey,
+		DataPath:    config.DataPath,
 	}
 
 	return nil
