@@ -81,6 +81,12 @@ func setupFromEnv() error {
 		configInstance.UseSSL = false
 	}
 
+	if managerKey := os.Getenv("MANAGER_KEY"); managerKey == "" {
+		return fmt.Errorf("manager key is required")
+	} else {
+		configInstance.ManagerKey = managerKey
+	}
+
 	if jwtKey := os.Getenv("JWT_KEY"); jwtKey == "" {
 		return fmt.Errorf("jwt key is required")
 	} else {

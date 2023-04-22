@@ -1,0 +1,10 @@
+{
+    "port": 3333, // env = PORT
+    "manager_key": "", // env = MANAGER_KEY
+    "jwt_key": "", // env = JWT_KEY
+    "ssl": {
+        "enable": true, // env = SSL_ENABLED
+        "key_path": "/etc/certs/key.key", // env = SSL_KEY
+        "cert_path": "/etc/certs/cert.crt" // env = SSL_CERT
+    }
+}
