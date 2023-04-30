@@ -13,7 +13,8 @@ type JwtService struct {
 }
 
 type FileSigJwtPayload struct {
-	FileId string `json:"file_id"`
+	FileId     string         `json:"file_id"`
+	Permission userPermission `json:"permission"`
 }
 
 type userPermission string
@@ -35,7 +36,10 @@ func NewJwtService() *JwtService {
 }
 
 func (j *JwtService) ValidateFileSig(p string) (*FileSigJwtPayload, error) {
-	var fileId string
+	var (
+		fileId     string
+		permission userPermission
+	)
 
 	token, err := jwt.Parse(p, func(t *jwt.Token) (interface{}, error) {
 		var ok bool
@@ -45,6 +49,10 @@ func (j *JwtService) ValidateFileSig(p string) (*FileSigJwtPayload, error) {
 		}
 
 		if fileId, ok = t.Claims.(jwt.MapClaims)["file_id"].(string); !ok {
+			return nil, fmt.Errorf("invalid token payload")
+		}
+
+		if permission, ok = t.Claims.(jwt.MapClaims)["file_permission"].(userPermission); !ok {
 			return nil, fmt.Errorf("invalid token payload")
 		}
 
@@ -60,7 +68,8 @@ func (j *JwtService) ValidateFileSig(p string) (*FileSigJwtPayload, error) {
 	}
 
 	return &FileSigJwtPayload{
-		FileId: fileId,
+		FileId:     fileId,
+		Permission: permission,
 	}, nil
 }
 
