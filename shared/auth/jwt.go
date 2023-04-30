@@ -1,4 +1,4 @@
-package services
+package auth
 
 import (
 	"errors"
@@ -29,9 +29,9 @@ type UserJwtPayload struct {
 	Permission userPermission `json:"permission"`
 }
 
-func NewJwtService() *JwtService {
+func NewJwtService(token string) *JwtService {
 	return &JwtService{
-		token: GetConfig().JwtKey,
+		token: token,
 	}
 }
 

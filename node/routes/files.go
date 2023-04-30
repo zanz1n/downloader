@@ -8,9 +8,10 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/zanz1n/downloader/node/services"
+	"github.com/zanz1n/downloader/shared/auth"
 )
 
-func GetFile(jp *services.JwtService) func(c *fiber.Ctx) error {
+func GetFile(jp *auth.JwtService) func(c *fiber.Ctx) error {
 	config := services.GetConfig()
 
 	return func(c *fiber.Ctx) error {
@@ -54,7 +55,7 @@ func GetFile(jp *services.JwtService) func(c *fiber.Ctx) error {
 	}
 }
 
-func PostFile(jp *services.JwtService) func(c *fiber.Ctx) error {
+func PostFile(jp *auth.JwtService) func(c *fiber.Ctx) error {
 	config := services.GetConfig()
 
 	return func(c *fiber.Ctx) error {
@@ -124,7 +125,7 @@ func PostFile(jp *services.JwtService) func(c *fiber.Ctx) error {
 				"error": "malformed file id, probably invalid UTF-8 characters",
 			})
 		}
-		
+
 		dstName := dst.Name()
 
 		src, err := file.Open()
