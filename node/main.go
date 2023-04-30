@@ -17,12 +17,13 @@ func main() {
 	config := services.GetConfig()
 
 	app := fiber.New(fiber.Config{
-		Prefork:       false,
-		ServerHeader:  "Fiber",
-		CaseSensitive: true,
-		StrictRouting: false,
-		JSONEncoder:   json.Marshal,
-		JSONDecoder:   json.Unmarshal,
+		Prefork:           false,
+		ServerHeader:      "Fiber",
+		CaseSensitive:     true,
+		StrictRouting:     false,
+		JSONEncoder:       json.Marshal,
+		JSONDecoder:       json.Unmarshal,
+		StreamRequestBody: true,
 	})
 
 	app.Use(logger.New(logger.Config{
