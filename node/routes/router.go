@@ -13,6 +13,8 @@ func NewRouter(app *fiber.App) {
 
 	jwtProvider := auth.NewJwtService(services.GetConfig().JwtKey)
 
+	authService := services.NewAuthService(jwtProvider)
+
 	app.Get("/file/:id", GetFile(jwtProvider))
-	app.Post("/file/:id", PostFile(jwtProvider))
+	app.Post("/file/:id", PostFile(authService))
 }

@@ -4,58 +4,27 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/zanz1n/downloader/node/services"
-	"github.com/zanz1n/downloader/shared/auth"
 )
 
-func PostFile(jp *auth.JwtService) func(c *fiber.Ctx) error {
+func PostFile(as *services.AuthService) func(c *fiber.Ctx) error {
 	config := services.GetConfig()
 
 	return func(c *fiber.Ctx) error {
-		/* Authorization */
-
 		id := c.Params("id")
 
 		authHeader := c.Get("Authorization")
 
-		if authHeader == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "the authorization header was not provided",
+
+		authErr := as.AuthFileWrite(id, authHeader)
+
+		if authErr != nil {
+			return c.Status(authErr.Status()).JSON(fiber.Map{
+				"error": authErr.Error(),
 			})
 		}
-
-		if !strings.HasPrefix(authHeader, "Bearer ") {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "malformed authorization header",
-			})
-		}
-
-		token := strings.Replace(authHeader, "Bearer ", "", 1)
-
-		if token == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "autorization header is required",
-			})
-		}
-
-		validatedJwt, err := jp.ValidateFileSig(token)
-
-		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "an invalid token was provided",
-			})
-		}
-
-		if validatedJwt.FileId != id || !strings.Contains(string(validatedJwt.Permission), "W") {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "the requested token doesn't grant you write access to this file",
-			})
-		}
-
-		/* File handling */
 
 		file, err := c.FormFile("file")
 
