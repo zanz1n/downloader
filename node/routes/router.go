@@ -17,4 +17,5 @@ func NewRouter(app *fiber.App) {
 
 	app.Get("/file/:id", GetFile(jwtProvider))
 	app.Post("/file/:id", PostFile(authService))
+	app.Delete("/file/:id", DeleteFile(authService))
 }
