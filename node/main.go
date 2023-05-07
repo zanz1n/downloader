@@ -7,11 +7,15 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/zanz1n/downloader/node/routes"
 	"github.com/zanz1n/downloader/node/services"
+	"github.com/zanz1n/downloader/shared/logger"
 )
+
+func init() {
+	logger.Init()
+}
 
 func main() {
 	config := services.GetConfig()
@@ -26,11 +30,7 @@ func main() {
 		StreamRequestBody: true,
 	})
 
-	app.Use(logger.New(logger.Config{
-		Format:     "${pid} - ${time} [${ip}]:${port} ${method} ${path} ${status} ${latency}\n",
-		TimeFormat: "2006/01/02 15:04:05",
-		TimeZone:   "America/Sao_Paulo",
-	}))
+	app.Use(logger.NewFiberMiddleware())
 
 	app.Use(recover.New())
 	app.Use(cors.New())
