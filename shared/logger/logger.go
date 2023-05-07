@@ -59,10 +59,8 @@ func methodColor(method string, colors fiber.Colors) string {
 }
 
 var (
-	warningLogger *log.Logger = defaultLogger(os.Stdout)
-	infoLogger    *log.Logger = defaultLogger(os.Stdout)
-	httpLogger    *log.Logger = defaultLogger(os.Stdout)
-	errorLogger   *log.Logger = defaultLogger(os.Stderr)
+	stdOutLogger *log.Logger = defaultLogger(os.Stdout)
+	stdErrLogger *log.Logger = defaultLogger(os.Stderr)
 
 	config *Config
 )
@@ -95,19 +93,19 @@ func Init() {
 }
 
 func Info(format string, args ...any) {
-	infoLogger.Printf(config.InfoPrefix+format+"\n", args...)
+	stdOutLogger.Output(2, fmt.Sprintf(config.InfoPrefix+format+"\n", args...))
 }
 
 func Warn(format string, args ...any) {
-	warningLogger.Printf(config.WarningPrefix+format+"\n", args...)
+	stdOutLogger.Output(2, fmt.Sprintf(config.WarningPrefix+format+"\n", args...))
 }
 
 func Error(format string, args ...any) {
-	errorLogger.Printf(config.ErrorPrefix+format+"\n", args...)
+	stdErrLogger.Output(2, fmt.Sprintf(config.ErrorPrefix+format+"\n", args...))
 }
 
 func Http(format string, args ...any) {
-	httpLogger.Printf(config.HttpPrefix+format, args...)
+	stdOutLogger.Output(2, fmt.Sprintf(config.HttpPrefix+format, args...))
 }
 
 func Fatal(format string, args ...any) {
