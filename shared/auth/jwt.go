@@ -35,6 +35,17 @@ func NewJwtService(token string) *JwtService {
 	}
 }
 
+func (j *JwtService) GenerateFileSig(p *FileSigJwtPayload) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+		"file_id":    p.FileId,
+		"permission": p.Permission,
+	})
+
+	tokenString, err := token.SignedString([]byte(j.token))
+
+	return tokenString, err
+}
+
 func (j *JwtService) ValidateFileSig(p string) (*FileSigJwtPayload, error) {
 	var (
 		fileId     string
@@ -71,6 +82,18 @@ func (j *JwtService) ValidateFileSig(p string) (*FileSigJwtPayload, error) {
 		FileId:     fileId,
 		Permission: permission,
 	}, nil
+}
+
+func (j *JwtService) GenerateUserToken(p *UserJwtPayload) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+		"id":         p.ID,
+		"username":   p.Username,
+		"permission": p.Permission,
+	})
+
+	tokenString, err := token.SignedString([]byte(j.token))
+
+	return tokenString, err
 }
 
 func (j *JwtService) ValidateUser(p string) (*UserJwtPayload, error) {
