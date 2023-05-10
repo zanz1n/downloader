@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
