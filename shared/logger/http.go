@@ -1,13 +1,13 @@
 package logger
 
 import (
+	"net"
 	"strconv"
 	"time"
 )
 
 type RequestInfo struct {
-	IP         string
-	Port       string
+	Addr       net.Addr
 	Method     string
 	Path       string
 	StatusCode int
@@ -23,9 +23,8 @@ func init() {
 func LogRequest(info *RequestInfo) {
 	if DefaultConfig.Colors {
 		httpLogger.Info(
-			"[%s]:%s  %s\x1b[0m  %s  %s%v\x1b[0m  %s%v\x1b[0m",
-			info.IP,
-			info.Port,
+			"%s  %s\x1b[0m  %s  %s%v\x1b[0m  %s%v\x1b[0m",
+			info.Addr.String(),
 			methodColor(info.Method)+info.Method,
 			info.Path,
 			statusColor(info.StatusCode),
@@ -36,21 +35,9 @@ func LogRequest(info *RequestInfo) {
 		return
 	}
 
-	httpLogger.Info(
-		"[" + info.IP + "]:" + info.Port + "  " +
-			info.Method + "  " + info.Path + "  " +
-			strconv.Itoa(info.StatusCode) + info.Duration.String(),
+	httpLogger.Info(info.Addr.String() + "  " + info.Method + "  " + info.Path +
+		"  " + strconv.Itoa(info.StatusCode) + info.Duration.String(),
 	)
-
-	// httpLogger.Info(
-	// 	"[%s]:%s  %s  %s  %v  %v",
-	// 	info.IP,
-	// 	info.Port,
-	// 	info.Method,
-	// 	info.Path,
-	// 	info.StatusCode,
-	// 	info.Duration,
-	// )
 }
 
 func methodColor(method string) string {
