@@ -2,150 +2,241 @@ package logger
 
 import (
 	"fmt"
-	"io"
-	"log"
 	"os"
+	"strconv"
 	"time"
-
-	"github.com/gofiber/fiber/v2"
 )
 
-func defaultLogger(out io.Writer, prefix ...string) *log.Logger {
-	p := fmt.Sprintf("%v\t", os.Getpid())
+type Logger interface {
+	Debug(format string, args ...any)
+	Info(format string, args ...any)
+	Warn(format string, args ...any)
+	Error(format string, args ...any)
+	Fatal(...any)
+}
 
-	if len(prefix) >= 1 {
-		p = prefix[0]
+func NewLogger(target string, cfg ...*Config) Logger {
+	l := LoggerImpl{
+		out:    os.Stdout,
+		target: target,
 	}
 
-	return log.New(
-		out,
-		p,
-		log.Ldate|log.Ltime,
+	if target != "" {
+		l.target = "  " + target
+	}
+
+	if len(cfg) == 0 {
+		l.cfg = DefaultConfig
+	} else {
+		l.cfg = cfg[0]
+	}
+
+	return &l
+}
+
+type LoggerImpl struct {
+	out    *os.File
+	target string
+	cfg    *Config
+}
+
+func (l *LoggerImpl) Debug(format string, args ...any) {
+	if !level.WillLog(LoggerLevelDebug) {
+		return
+	}
+	fm := fmt.Sprintf(format, args...)
+
+	l.out.WriteString("\r" +
+		l.cfg.SBL + nowFormated() +
+		l.cfg.DebugPrefix + l.target +
+		l.cfg.SBR + fm + "\n",
 	)
 }
 
-func statusColor(code int, colors fiber.Colors) string {
-	switch {
-	case code >= fiber.StatusOK && code < fiber.StatusMultipleChoices:
-		return colors.Green
-	case code >= fiber.StatusMultipleChoices && code < fiber.StatusBadRequest:
-		return colors.Blue
-	case code >= fiber.StatusBadRequest && code < fiber.StatusInternalServerError:
-		return colors.Yellow
-	default:
-		return colors.Red
+func (l *LoggerImpl) Info(format string, args ...any) {
+	if !level.WillLog(LoggerLevelInfo) {
+		return
 	}
+	fm := fmt.Sprintf(format, args...)
+
+	l.out.WriteString("\r" +
+		l.cfg.SBL + nowFormated() +
+		l.cfg.InfoPrefix + l.target +
+		l.cfg.SBR + fm + "\n",
+	)
 }
 
-func methodColor(method string, colors fiber.Colors) string {
-	switch method {
-	case fiber.MethodGet:
-		return colors.Cyan
-	case fiber.MethodPost:
-		return colors.Green
-	case fiber.MethodPut:
-		return colors.Yellow
-	case fiber.MethodDelete:
-		return colors.Red
-	case fiber.MethodPatch:
-		return colors.White
-	case fiber.MethodHead:
-		return colors.Magenta
-	case fiber.MethodOptions:
-		return colors.Blue
-	default:
-		return colors.Reset
+func (l *LoggerImpl) Warn(format string, args ...any) {
+	if !level.WillLog(LoggerLevelWarn) {
+		return
 	}
+	fm := fmt.Sprintf(format, args...)
+
+	l.out.WriteString("\r" +
+		l.cfg.SBL + nowFormated() +
+		l.cfg.WarningPrefix + l.target +
+		l.cfg.SBR + fm + "\n",
+	)
+}
+
+func (l *LoggerImpl) Error(format string, args ...any) {
+	if !level.WillLog(LoggerLevelError) {
+		return
+	}
+	fm := fmt.Sprintf(format, args...)
+
+	l.out.WriteString("\r" +
+		l.cfg.SBL + nowFormated() +
+		l.cfg.ErrorPrefix + l.target +
+		l.cfg.SBR + fm + "\n",
+	)
+}
+
+func (l *LoggerImpl) Fatal(args ...any) {
+	fm := fmt.Sprint(args...)
+
+	l.out.WriteString("\r" +
+		l.cfg.SBL + nowFormated() +
+		l.cfg.ErrorPrefix + l.target +
+		l.cfg.SBR + fm + "\n",
+	)
+	os.Exit(1)
 }
 
 var (
-	stdOutLogger *log.Logger = defaultLogger(os.Stdout)
-	stdErrLogger *log.Logger = defaultLogger(os.Stderr)
-
-	config *Config
+	DefaultConfig *Config
+	level         *LoggerLevel
+	defaultLogger Logger
 )
 
 type Config struct {
 	InfoPrefix    string
 	WarningPrefix string
 	ErrorPrefix   string
-	HttpPrefix    string
+	DebugPrefix   string
 	Colors        bool
+	SBL, SBR      string
 }
 
-func Init() {
-	config = &Config{}
+func init() {
+	DefaultConfig = &Config{}
 
-	config.InfoPrefix = "\tINFO\t"
-	config.ErrorPrefix = "\tERROR\n"
-	config.HttpPrefix = "\tHTTP\t"
-	config.WarningPrefix = "\tWARN\t"
+	DefaultConfig.InfoPrefix = " INFO"
+	DefaultConfig.ErrorPrefix = " ERROR"
+	DefaultConfig.WarningPrefix = " WARN"
+	DefaultConfig.DebugPrefix = " DEBUG"
 
 	if os.Getenv("TERM") == "dumb" || os.Getenv("NO_COLOR") == "1" {
-		config.Colors = false
+		DefaultConfig.Colors = false
+
+		DefaultConfig.SBR = "] "
+		DefaultConfig.SBL = "["
 	} else {
-		config.Colors = true
-		config.InfoPrefix = "\x1b[36m" + config.InfoPrefix + "\x1b[0m"
-		config.WarningPrefix = "\x1b[33m" + config.WarningPrefix + "\x1b[0m"
-		config.ErrorPrefix = "\x1b[31m" + config.ErrorPrefix + "\x1b[0m"
-		config.HttpPrefix = "\x1b[34m" + config.HttpPrefix + "\x1b[0m"
+		DefaultConfig.SBR = "\x1b[90m]\x1b[0m "
+		DefaultConfig.SBL = "\x1b[90m[\x1b[0m"
+
+		DefaultConfig.Colors = true
+		DefaultConfig.InfoPrefix = "\x1b[32m" + DefaultConfig.InfoPrefix + "\x1b[0m"
+		DefaultConfig.WarningPrefix = "\x1b[33m" + DefaultConfig.WarningPrefix + "\x1b[0m"
+		DefaultConfig.ErrorPrefix = "\x1b[31m" + DefaultConfig.ErrorPrefix + "\x1b[0m"
+		DefaultConfig.DebugPrefix = "\x1b[36m" + DefaultConfig.DebugPrefix + "\x1b[0m"
 	}
+
+	SetLevel(os.Getenv("LOGGER_LEVEL"))
+
+	defaultLogger = &LoggerImpl{
+		out:    os.Stdout,
+		target: "",
+		cfg:    DefaultConfig,
+	}
+}
+
+func SetLevel(t string) {
+	var target LoggerLevel
+	switch t {
+	case "info":
+		target = LoggerLevelInfo
+	case "3":
+		target = LoggerLevelInfo
+	case "warn":
+		target = LoggerLevelWarn
+	case "2":
+		target = LoggerLevelWarn
+	case "error":
+		target = LoggerLevelError
+	case "1":
+		target = LoggerLevelError
+	default:
+		target = LoggerLevelAll
+	}
+
+	if level == nil {
+		level = &target
+	} else {
+		*level = target
+	}
+
+}
+
+type LoggerLevel uint8
+
+const (
+	LoggerLevelDebug LoggerLevel = 4
+	LoggerLevelInfo  LoggerLevel = 3
+	LoggerLevelWarn  LoggerLevel = 2
+	LoggerLevelError LoggerLevel = 1
+	LoggerLevelAll   LoggerLevel = 0
+)
+
+func (cfg *LoggerLevel) WillLog(target LoggerLevel) bool {
+	if *cfg == 0 {
+		return true
+	}
+
+	if target > *cfg {
+		return false
+	} else {
+		return true
+	}
+}
+
+func nowFormated() string {
+	now := time.Now()
+
+	ms := now.Nanosecond() / 1000
+	mss := strconv.Itoa(ms)
+
+	if ms < 10 {
+		mss = "00" + mss
+	} else if ms < 100 {
+		mss = "0" + mss
+	}
+
+	return strconv.Itoa(now.Year()) + "/" +
+		strconv.Itoa(int(now.Month())) + "/" +
+		strconv.Itoa(now.Day()) + " " +
+		strconv.Itoa(now.Hour()) + ":" +
+		strconv.Itoa(now.Minute()) + ":" +
+		strconv.Itoa(now.Second()) + "." +
+		mss
+}
+
+func Debug(format string, args ...any) {
+	defaultLogger.Debug(format, args...)
 }
 
 func Info(format string, args ...any) {
-	stdOutLogger.Output(2, fmt.Sprintf(config.InfoPrefix+format+"\n", args...))
+	defaultLogger.Info(format, args...)
 }
 
 func Warn(format string, args ...any) {
-	stdOutLogger.Output(2, fmt.Sprintf(config.WarningPrefix+format+"\n", args...))
+	defaultLogger.Warn(format, args...)
 }
 
 func Error(format string, args ...any) {
-	stdErrLogger.Output(2, fmt.Sprintf(config.ErrorPrefix+format+"\n", args...))
+	defaultLogger.Error(format, args...)
 }
 
-func Http(format string, args ...any) {
-	stdOutLogger.Output(2, fmt.Sprintf(config.HttpPrefix+format, args...))
-}
-
-func Fatal(format string, args ...any) {
-	Error(format, args...)
-	os.Exit(1)
-}
-
-func NewFiberMiddleware() fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		start := time.Now()
-
-		c.Next()
-
-		end := time.Now()
-
-		if config.Colors {
-			Http(
-				"[%s]:%s  %s%s\x1b[0m  %s  %s%v\x1b[0m  %s%v\x1b[0m",
-				c.IP(),
-				c.Port(),
-				methodColor(c.Method(), fiber.DefaultColors),
-				c.Method(),
-				c.Path(),
-				statusColor(c.Response().StatusCode(), fiber.DefaultColors),
-				c.Response().StatusCode(),
-				"\x1b[90m",
-				end.Sub(start),
-			)
-		} else {
-			Http(
-				"[%s]:%s  %s  %s  %v  %v",
-				c.IP(),
-				c.Port(),
-				c.Method(),
-				c.Path(),
-				c.Response().StatusCode(),
-				end.Sub(start),
-			)
-		}
-
-		return nil
-	}
+func Fatal(args ...any) {
+	defaultLogger.Fatal(args...)
 }
