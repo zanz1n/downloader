@@ -16,8 +16,6 @@ var (
 	debug      = flag.Bool("debug", false, "If set, the app print debug logs")
 )
 
-var endCh = make(chan os.Signal)
-
 func init() {
 	flag.Parse()
 
@@ -29,6 +27,8 @@ func init() {
 }
 
 func main() {
+	endCh := make(chan os.Signal, 1)
+
 	srv := server.NewServer()
 
 	signal.Notify(endCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
