@@ -9,6 +9,29 @@ import (
 	"context"
 )
 
+const getJwtInfoByEmail = `-- name: GetJwtInfoByEmail :one
+SELECT "id", "email", "password", "role" FROM "users" WHERE "email" = $1
+`
+
+type GetJwtInfoByEmailRow struct {
+	ID       string   `json:"id"`
+	Email    string   `json:"email"`
+	Password string   `json:"password"`
+	Role     UserRole `json:"role"`
+}
+
+func (q *Queries) GetJwtInfoByEmail(ctx context.Context, email string) (*GetJwtInfoByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getJwtInfoByEmail, email)
+	var i GetJwtInfoByEmailRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Role,
+	)
+	return &i, err
+}
+
 const getNodeById = `-- name: GetNodeById :one
 SELECT id, name, description, address, ssl, capacity FROM "nodes" WHERE "id" = $1
 `
@@ -23,6 +46,44 @@ func (q *Queries) GetNodeById(ctx context.Context, id string) (*Node, error) {
 		&i.Address,
 		&i.Ssl,
 		&i.Capacity,
+	)
+	return &i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, "firstName", "lastName", email, password, deleted, role FROM "users" WHERE "email" = $1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Deleted,
+		&i.Role,
+	)
+	return &i, err
+}
+
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, "firstName", "lastName", email, password, deleted, role FROM "users" WHERE "id" = $1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id string) (*User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Deleted,
+		&i.Role,
 	)
 	return &i, err
 }
