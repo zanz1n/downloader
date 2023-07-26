@@ -2,10 +2,20 @@ package config
 
 import (
 	"errors"
+	"io"
+	"os"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/zanz1n/downloader/shared/logger"
+	"gopkg.in/yaml.v3"
 )
+
+var config *Config
+
+func GetConfig() *Config {
+	return config
+}
 
 type Config struct {
 	InstanceID string     `json:"id" yaml:"id"`
@@ -61,6 +71,10 @@ func (c *Config) IsValid() error {
 	return nil
 }
 
+func (c *Config) SetKey(v string) {
+	c.Key = v
+}
+
 func validateSsl(ssl *ConfigSSl) error {
 	if ssl == nil {
 		return errors.New("config: 'ssl' prop must not be null")
@@ -75,4 +89,28 @@ func validateSsl(ssl *ConfigSSl) error {
 	}
 
 	return nil
+}
+
+func FromYamlFile(path string) error {
+	file, err := os.Open(path)
+
+	if err != nil {
+		return errors.New("config: could not open file " + path)
+	}
+
+	buf, err := io.ReadAll(file)
+
+	if err != nil {
+		return errors.New("config: failed to read config file")
+	}
+
+	yaml.Unmarshal(buf, config)
+
+	return config.IsValid()
+}
+
+func MustFromYamlFile(path string) {
+	if err := FromYamlFile(path); err != nil {
+		logger.Fatal(err)
+	}
 }
