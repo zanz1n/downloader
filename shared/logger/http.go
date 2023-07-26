@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+const (
+	reset     = "\x1b[0m"
+	fgRed     = "\x1b[31m"
+	fgGreen   = "\x1b[32m"
+	fgYellow  = "\x1b[33m"
+	fgBlue    = "\x1b[34m"
+	fgMagenta = "\x1b[35m"
+	fgCyan    = "\x1b[36m"
+	fgGray    = "\x1b[90m"
+)
+
 type RequestInfo struct {
 	Addr       net.Addr
 	Method     string
@@ -19,13 +30,11 @@ var httpLogger Logger
 func LogRequest(info *RequestInfo) {
 	if DefaultConfig.Colors {
 		httpLogger.Info(
-			"%s  %s\x1b[0m  %s  %s%v\x1b[0m  %s%v\x1b[0m",
+			"%s  %s  %s  %s  "+fgGray+"%v"+reset,
 			info.Addr.String(),
-			methodColor(info.Method)+info.Method,
+			methodColor(info.Method),
 			info.Path,
 			statusColor(info.StatusCode),
-			info.StatusCode,
-			"\x1b[90m", // Gray
 			info.Duration,
 		)
 		return
@@ -39,34 +48,36 @@ func LogRequest(info *RequestInfo) {
 func methodColor(method string) string {
 	switch method {
 	case "GET":
-		return "\x1b[36m" // Cyan
+		return fgCyan + method + reset
 	case "POST":
-		return "\x1b[32m" // Green
+		return fgGreen + method + reset
 	case "PUT":
-		return "\x1b[33m" // Yellow
+		return fgYellow + method + reset
 	case "DELETE":
-		return "\x1b[31m" // Red
+		return fgRed + method + reset
 	case "PATCH":
-		return "\x1b[33m" // Yellow
+		return fgYellow + method + reset
 	case "HEAD":
-		return "\x1b[35m" // Magenta
+		return fgMagenta + method + reset
 	case "OPTIONS":
-		return "\x1b[34m" // Magenta
+		return fgBlue + method + reset
 	default:
-		return ""
+		return method
 	}
 }
 
 func statusColor(code int) string {
+	cstr := strconv.Itoa(code)
+
 	if code >= 100 && code < 200 {
-		return "\x1b[35m" // Magenta
+		return fgMagenta + cstr + reset
 	} else if code >= 200 && code < 300 {
-		return "\x1b[32m" // Green
+		return fgGreen + cstr + reset
 	} else if code >= 300 && code < 400 {
-		return "\x1b[34m" // Blue
+		return fgBlue + cstr + reset
 	} else if code >= 400 && code < 500 {
-		return "\x1b[33m" // Yellow
+		return fgYellow + cstr + reset
 	} else {
-		return "\x1b[31m" // Red
+		return fgRed + cstr + reset
 	}
 }
