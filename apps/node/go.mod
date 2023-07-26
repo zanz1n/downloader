@@ -1,4 +1,4 @@
-module github.com/zanz1n/downloader/node
+module github.com/zanz1n/downloader/apps/node
 
 go 1.20
 

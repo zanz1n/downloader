@@ -1,5 +1,5 @@
 build-node:
-	go build -ldflags "-s -w" -o dist/node.bin ./node/main.go
+	go build -ldflags "-s -w" -o dist/node.bin ./apps/node/main.go
 
 run-node:
-	go run ./node/main.go
+	go run ./apps/node/main.go
