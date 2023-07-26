@@ -64,8 +64,10 @@ func (c *Config) IsValid() error {
 	if err = validateSsl(c.App.SSL); err != nil {
 		return err
 	}
-	if err = validateSsl(c.TCP.SSL); err != nil {
-		return err
+	if c.TCP.Enabled {
+		if err = validateSsl(c.TCP.SSL); err != nil {
+			return err
+		}
 	}
 
 	return nil
