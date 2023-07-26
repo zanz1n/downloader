@@ -1,7 +1,9 @@
 package server
 
 import (
+	"errors"
 	"log"
+	"os"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -45,6 +47,28 @@ func (s *Server) Handler(ctx *fasthttp.RequestCtx) {
 func (s *Server) Shutdown() {
 	serverLogger.Info("Shutting down...")
 	s.fhttp.Shutdown()
+}
+
+func (s *Server) MustListenAndServeTLS(addr, certPath, keyPath string) {
+	if err := s.ListenAndServeTLS(addr, certPath, keyPath); err != nil {
+		logger.Fatal(err)
+	}
+}
+
+func (s *Server) ListenAndServeTLS(addr, certPath, keyPath string) error {
+	certData, err := os.ReadFile(certPath)
+
+	if err != nil {
+		return errors.New("failed to open ssl certificate at " + certPath)
+	}
+
+	keyData, err := os.ReadFile(keyPath)
+
+	if err != nil {
+		return errors.New("failed to open ssl key at " + certPath)
+	}
+
+	return s.fhttp.ListenAndServeTLSEmbed(addr, certData, keyData)
 }
 
 func (s *Server) MustListenAndServe(addr string) {
