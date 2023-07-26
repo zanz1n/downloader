@@ -47,5 +47,6 @@ func main() {
 
 	<-endCh
 
+	config.DumpToFile()
 	srv.Shutdown()
 }
