@@ -3,10 +3,11 @@ module github.com/zanz1n/downloader/node
 go 1.20
 
 require (
-	github.com/valyala/fasthttp v1.48.0
-	github.com/zanz1n/downloader/shared v0.0.0-20230507174220-af19e23b69d2
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/google/uuid v1.3.0
+	github.com/valyala/fasthttp v1.48.0
+	github.com/zanz1n/downloader/shared v0.0.0-20230507174220-af19e23b69d2
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
