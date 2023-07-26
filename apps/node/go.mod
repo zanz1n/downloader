@@ -6,7 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/google/uuid v1.3.0
 	github.com/valyala/fasthttp v1.48.0
-	github.com/zanz1n/downloader/shared v0.0.0-20230507174220-af19e23b69d2
+	github.com/zanz1n/downloader/shared v0.0.0-20230726055442-61c90244bb62
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -20,6 +20,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 )
