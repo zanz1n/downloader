@@ -104,6 +104,8 @@ func FromYamlFile(path string) error {
 		return errors.New("config: failed to read config file")
 	}
 
+	config = &Config{}
+
 	yaml.Unmarshal(buf, config)
 
 	return config.IsValid()
