@@ -1,0 +1,100 @@
+package auth
+
+import (
+	"context"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/zanz1n/downloader/dba"
+	"github.com/zanz1n/downloader/shared/errors"
+	"github.com/zanz1n/downloader/shared/utils"
+	"golang.org/x/crypto/bcrypt"
+)
+
+func NewAuthService(secret []byte, tokenDuration time.Duration, dba dba.Querier) *AuthService {
+	return &AuthService{
+		jwtKey:            secret,
+		userTokenDuration: tokenDuration,
+		dba:               dba,
+	}
+}
+
+type AuthService struct {
+	jwtKey            []byte
+	userTokenDuration time.Duration
+	dba               dba.Querier
+	signingMethod     jwt.SigningMethod
+}
+
+func (as *AuthService) EncodeFileAccessToken(claims *FileAccessJwtPayload) (string, error) {
+	token := jwt.NewWithClaims(as.signingMethod, claims)
+
+	s, err := token.SignedString(as.jwtKey)
+
+	if err != nil {
+		authLogger.Warn("Failed to generate user jwt token: " + err.Error())
+		return "", errors.TokenGenerationFailed
+	}
+
+	return s, nil
+}
+
+func (as *AuthService) EncodeUserToken(claims *UserJwtPayload) (string, error) {
+	token := jwt.NewWithClaims(as.signingMethod, claims)
+
+	s, err := token.SignedString(as.jwtKey)
+
+	if err != nil {
+		authLogger.Warn("Failed to generate user jwt token: " + err.Error())
+		return "", errors.TokenGenerationFailed
+	}
+
+	return s, nil
+}
+
+func (as *AuthService) CreateFileAccessToken(fileId string, permission FileAccessPerm, duration time.Duration) (string, error) {
+	now := time.Now()
+	expiry := now.Add(duration)
+
+	claims := FileAccessJwtPayload{
+		FileID:     fileId,
+		ExpiryDate: expiry.Unix(),
+		IssuedAt:   now.Unix(),
+		Permission: permission,
+	}
+
+	return as.EncodeFileAccessToken(&claims)
+}
+
+func (as *AuthService) AuthUser(email, passwd string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
+	defer cancel()
+
+	info, err := as.dba.GetJwtInfoByEmail(ctx, email)
+
+	if err != nil {
+		return "", errors.ErrUserAuthFailed
+	}
+
+	err = bcrypt.CompareHashAndPassword(
+		utils.S2B(info.Password),
+		utils.S2B(passwd),
+	)
+
+	if err != nil {
+		return "", errors.ErrUserAuthFailed
+	}
+
+	now := time.Now()
+	expiry := now.Add(as.userTokenDuration)
+
+	claims := UserJwtPayload{
+		UserID:     info.ID,
+		Email:      info.Email,
+		ExpiryDate: expiry.Unix(),
+		IssuedAt:   now.Unix(),
+		Role:       info.Role,
+	}
+
+	return as.EncodeUserToken(&claims)
+}
