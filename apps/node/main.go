@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,12 +29,21 @@ func init() {
 
 func main() {
 	endCh := make(chan os.Signal, 1)
+	signal.Notify(endCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+
+	cfg := config.GetConfig()
 
 	srv := server.NewServer()
 
-	signal.Notify(endCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
-
-	go srv.MustListenAndServe(":8080")
+	if cfg.App.SSL.Enabled {
+		go srv.MustListenAndServeTLS(
+			fmt.Sprintf(":%v", cfg.App.Port),
+			cfg.App.SSL.CertificateFile,
+			cfg.App.SSL.KeyFile,
+		)
+	} else {
+		go srv.MustListenAndServe(fmt.Sprintf(":%v", cfg.App.Port))
+	}
 
 	<-endCh
 
