@@ -16,10 +16,6 @@ type RequestInfo struct {
 
 var httpLogger Logger
 
-func init() {
-	httpLogger = NewLogger("http_log")
-}
-
 func LogRequest(info *RequestInfo) {
 	if DefaultConfig.Colors {
 		httpLogger.Info(
