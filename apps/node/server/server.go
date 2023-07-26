@@ -68,6 +68,10 @@ func (s *Server) ListenAndServeTLS(addr, certPath, keyPath string) error {
 		return errors.New("failed to open ssl key at " + certPath)
 	}
 
+	s.fhttp.Handler = s.Handler
+
+	serverLogger.Info("Listening with tls for " + addr)
+
 	return s.fhttp.ListenAndServeTLSEmbed(addr, certData, keyData)
 }
 
