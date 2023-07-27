@@ -2,6 +2,8 @@ package errors
 
 import (
 	"sync"
+
+	"github.com/goccy/go-json"
 )
 
 var (
@@ -59,4 +61,19 @@ func (e *errorImpl) Error() string {
 
 func New(text string) error {
 	return &errorImpl{m: text}
+}
+
+type ErrorBody struct {
+	Message   string `json:"message"`
+	ErrorCode uint   `json:"errorCode"`
+}
+
+func (e *ErrorBody) Marshal() []byte {
+	buf, err := json.Marshal(e)
+
+	if err != nil {
+		return []byte("{\"message\":\"Failed to marshal response body\",\"errorCode\":5000}")
+	}
+
+	return buf
 }
