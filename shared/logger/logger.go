@@ -93,7 +93,16 @@ func (l *LoggerImpl) Error(format string, args ...any) {
 }
 
 func (l *LoggerImpl) Fatal(args ...any) {
-	fm := fmt.Sprint(args...)
+	var fm string
+	if len(args) > 0 {
+		if s, ok := args[0].(string); ok {
+			fm = fmt.Sprintf(s, args[1:]...)
+		} else {
+			fm = fmt.Sprint(args...)
+		}
+	} else {
+		fm = fmt.Sprint(args...)
+	}
 
 	l.out.WriteString("\r" +
 		l.cfg.SBL + nowFormated() +
