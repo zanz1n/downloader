@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/zanz1n/downloader/dba"
+	"github.com/zanz1n/downloader/shared/errors"
 )
 
 type FileAccessPerm uint8
@@ -55,6 +56,18 @@ type FileAccessJwtPayload struct {
 	ExpiryDate int64          `json:"exp"`
 	IssuedAt   int64          `json:"iat"`
 	Permission FileAccessPerm `json:"perm"`
+}
+
+func (p *FileAccessJwtPayload) Validate() error {
+	if err := validate.Struct(p); err != nil {
+		return errors.ErrInvalidJwtToken
+	}
+
+	if p.ExpiryDate < time.Now().Unix() {
+		return errors.ErrExpiredJwtToken
+	}
+
+	return nil
 }
 
 func (p *FileAccessJwtPayload) GetExpirationTime() (*jwt.NumericDate, error) {
