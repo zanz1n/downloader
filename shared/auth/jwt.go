@@ -11,16 +11,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func NewAuthService(secret []byte, tokenDuration time.Duration, dba dba.Querier) *AuthService {
+type Options struct {
+	UserTokenDuration time.Duration
+	JwtKey            []byte
+}
+
+func NewAuthService(dba dba.Querier, options *Options) *AuthService {
 	return &AuthService{
-		jwtKey:            secret,
-		userTokenDuration: tokenDuration,
-		dba:               dba,
+		Options:       options,
+		dba:           dba,
+		signingMethod: jwt.SigningMethodEdDSA,
 	}
 }
 
 type AuthService struct {
-	jwtKey            []byte
+	*Options
 	userTokenDuration time.Duration
 	dba               dba.Querier
 	signingMethod     jwt.SigningMethod
@@ -29,7 +34,7 @@ type AuthService struct {
 func (as *AuthService) EncodeFileAccessToken(claims *FileAccessJwtPayload) (string, error) {
 	token := jwt.NewWithClaims(as.signingMethod, claims)
 
-	s, err := token.SignedString(as.jwtKey)
+	s, err := token.SignedString(as.JwtKey)
 
 	if err != nil {
 		authLogger.Warn("Failed to generate user jwt token: " + err.Error())
@@ -42,7 +47,7 @@ func (as *AuthService) EncodeFileAccessToken(claims *FileAccessJwtPayload) (stri
 func (as *AuthService) EncodeUserToken(claims *UserJwtPayload) (string, error) {
 	token := jwt.NewWithClaims(as.signingMethod, claims)
 
-	s, err := token.SignedString(as.jwtKey)
+	s, err := token.SignedString(as.JwtKey)
 
 	if err != nil {
 		authLogger.Warn("Failed to generate user jwt token: " + err.Error())
@@ -52,7 +57,11 @@ func (as *AuthService) EncodeUserToken(claims *UserJwtPayload) (string, error) {
 	return s, nil
 }
 
-func (as *AuthService) CreateFileAccessToken(fileId string, permission FileAccessPerm, duration time.Duration) (string, error) {
+func (as *AuthService) CreateFileAccessToken(
+	fileId string,
+	permission FileAccessPerm,
+	duration time.Duration,
+) (string, error) {
 	now := time.Now()
 	expiry := now.Add(duration)
 
