@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"log"
 	"os"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/zanz1n/downloader/dba"
 	"github.com/zanz1n/downloader/shared/auth"
+	"github.com/zanz1n/downloader/shared/errors"
 	"github.com/zanz1n/downloader/shared/logger"
 	"github.com/zanz1n/downloader/shared/utils"
 )
@@ -55,6 +55,18 @@ func (s *Server) Handler(ctx *fasthttp.RequestCtx) {
 func (s *Server) Shutdown() {
 	serverLogger.Info("Shutting down...")
 	s.fhttp.Shutdown()
+}
+
+func (s *Server) HandleError(c *fasthttp.RequestCtx, err error) {
+	st := errors.GetStatusErr(err)
+
+	errBody := errors.ErrorBody{
+		Message:   st.Message(),
+		ErrorCode: st.CustomCode(),
+	}
+
+	c.SetBody(errBody.Marshal())
+	c.SetStatusCode(st.HttpCode())
 }
 
 func (s *Server) MustListenAndServeTLS(addr, certPath, keyPath string) {
