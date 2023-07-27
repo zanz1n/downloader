@@ -9,6 +9,22 @@ import (
 	"context"
 )
 
+const getFileUserAndNodeById = `-- name: GetFileUserAndNodeById :one
+SELECT "userId", "nodeId" FROM "files" WHERE id = $1
+`
+
+type GetFileUserAndNodeByIdRow struct {
+	UserId string `json:"userId"`
+	NodeId string `json:"nodeId"`
+}
+
+func (q *Queries) GetFileUserAndNodeById(ctx context.Context, id string) (*GetFileUserAndNodeByIdRow, error) {
+	row := q.db.QueryRow(ctx, getFileUserAndNodeById, id)
+	var i GetFileUserAndNodeByIdRow
+	err := row.Scan(&i.UserId, &i.NodeId)
+	return &i, err
+}
+
 const getJwtInfoByEmail = `-- name: GetJwtInfoByEmail :one
 SELECT "id", "email", "password", "role" FROM "users" WHERE "email" = $1
 `
