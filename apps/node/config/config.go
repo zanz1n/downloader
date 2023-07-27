@@ -21,8 +21,12 @@ type Config struct {
 	InstanceID string `json:"id" yaml:"id"`
 	// Can and will be change during runtime. Is the Key that will sign
 	// every restricted api request.
-	Key string     `json:"key" yaml:"key"`
-	App *ConfigApp `json:"app" yaml:"app"`
+	Key string `json:"key" yaml:"key"`
+	// The uri of the postgres database
+	PostgresURI string `json:"postgresUri" yaml:"postgres-uri"`
+	// Jwt token keypair
+	JwtKey string     `json:"jwtKey" yaml:"jwt-key"`
+	App    *ConfigApp `json:"app" yaml:"app"`
 	// This configures the tcp server that will run for streaming files in
 	// a better speed
 	TCP *ConfigTcp `json:"tcp" yaml:"tcp"`
@@ -65,6 +69,10 @@ func (c *Config) IsValid() error {
 	}
 
 	switch {
+	case c.JwtKey == "":
+		return errors.New("config: jwt key must be provided")
+	case c.PostgresURI == "":
+		return errors.New("config: postgres uri must not be empty")
 	case c.App == nil:
 		return errors.New("config: 'app' prop must be provided")
 	case c.TCP == nil:
