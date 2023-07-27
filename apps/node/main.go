@@ -1,15 +1,21 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/zanz1n/downloader/apps/node/config"
 	"github.com/zanz1n/downloader/apps/node/server"
+	"github.com/zanz1n/downloader/dba"
+	"github.com/zanz1n/downloader/shared/auth"
 	"github.com/zanz1n/downloader/shared/logger"
+	"github.com/zanz1n/downloader/shared/utils"
 )
 
 var (
@@ -33,7 +39,23 @@ func main() {
 
 	cfg := config.GetConfig()
 
-	srv := server.NewServer()
+	connCtx, connCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer connCancel()
+
+	conn, err := pgx.Connect(connCtx, cfg.PostgresURI)
+
+	if err != nil {
+		logger.Fatal("Failed to connect to database: " + err.Error())
+	}
+
+	db := dba.New(conn)
+
+	authService := auth.NewAuthService(db, &auth.Options{
+		UserTokenDuration: time.Hour,
+		JwtKey:            utils.S2B(cfg.JwtKey),
+	})
+
+	srv := server.NewServer(db, authService)
 
 	if cfg.App.SSL.Enabled {
 		go srv.MustListenAndServeTLS(
