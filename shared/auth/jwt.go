@@ -73,6 +73,22 @@ func (as *AuthService) DecodeFileAccessToken(payload string) (*FileAccessJwtPayl
 	return &claims, nil
 }
 
+func (as *AuthService) DecodeUserToken(payload string) (*UserJwtPayload, error) {
+	claims := UserJwtPayload{}
+
+	token, err := jwt.ParseWithClaims(payload, &claims, as.userTokenKeyFunc)
+
+	if err != nil || !token.Valid {
+		return nil, errors.ErrInvalidJwtToken
+	}
+
+	if err = claims.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &claims, nil
+}
+
 func (as *AuthService) CreateFileAccessToken(
 	fileId string,
 	permission FileAccessPerm,
@@ -125,6 +141,14 @@ func (as *AuthService) AuthUser(email, passwd string) (string, error) {
 }
 
 func (as *AuthService) accessTokenKeyFunc(token *jwt.Token) (interface{}, error) {
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		return nil, errors.ErrInvalidJwtToken
+	}
+
+	return as.JwtKey, nil
+}
+
+func (as *AuthService) userTokenKeyFunc(token *jwt.Token) (interface{}, error) {
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 		return nil, errors.ErrInvalidJwtToken
 	}
