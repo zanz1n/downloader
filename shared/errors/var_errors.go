@@ -3,14 +3,18 @@ package errors
 var mpe = map[error]StatusError{
 	ErrPasswordHashingFailed: statusInternalServerError,
 	ErrUserAuthFailed:        statusUserAuthFailed,
-	TokenGenerationFailed:    statusInternalServerError,
+	ErrTokenGenerationFailed: statusInternalServerError,
+	ErrRouteRequiresAuth:     statusRouteRequiresAuth,
+	ErrExpiredJwtToken:       statusExpiredJwtToken,
+	ErrInvalidJwtToken:       statusInvalidJwtToken,
+	ErrDecodeTokenUnknownErr: statusInternalServerError,
 }
 
 var (
 	statusInternalServerError = &statusErrorImpl{
 		code:     5000,
 		httpCode: 500,
-		message:  "Internal server error",
+		message:  "Something went wrong while processing your request",
 	}
 	statusUserNotFound = &statusErrorImpl{
 		code:     4041,
@@ -22,10 +26,29 @@ var (
 		httpCode: 401,
 		message:  "User not found or password do not match",
 	}
+	statusRouteRequiresAuth = &statusErrorImpl{
+		code:     4012,
+		httpCode: 401,
+		message:  "This route requires authorization",
+	}
+	statusExpiredJwtToken = &statusErrorImpl{
+		code:     4013,
+		httpCode: 401,
+		message:  "The provided authorization token is expired",
+	}
+	statusInvalidJwtToken = &statusErrorImpl{
+		code:     4014,
+		httpCode: 401,
+		message:  "The provided authorization token is invalid",
+	}
 )
 
 var (
-	TokenGenerationFailed    = New("failed to generate the jwt token")
+	ErrRouteRequiresAuth     = New("this route requires authorization")
+	ErrTokenGenerationFailed = New("failed to generate the jwt token")
 	ErrPasswordHashingFailed = New("failed to hash user password")
 	ErrUserAuthFailed        = New("user not found or password do not match")
+	ErrInvalidJwtToken       = New("the provided authorization token is invalid")
+	ErrExpiredJwtToken       = New("the provided authorization token is expired")
+	ErrDecodeTokenUnknownErr = New("something went wrong while decoding the token")
 )
