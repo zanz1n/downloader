@@ -20,7 +20,7 @@ func NewAuthService(dba dba.Querier, options *Options) *AuthService {
 	return &AuthService{
 		Options:       options,
 		dba:           dba,
-		signingMethod: jwt.SigningMethodEdDSA,
+		signingMethod: jwt.SigningMethodHS256,
 	}
 }
 
@@ -37,8 +37,8 @@ func (as *AuthService) EncodeFileAccessToken(claims *FileAccessJwtPayload) (stri
 	s, err := token.SignedString(as.JwtKey)
 
 	if err != nil {
-		authLogger.Warn("Failed to generate user jwt token: " + err.Error())
-		return "", errors.TokenGenerationFailed
+		authLogger.Warn("Failed to generate file access jwt token: " + err.Error())
+		return "", errors.ErrTokenGenerationFailed
 	}
 
 	return s, nil
@@ -51,10 +51,26 @@ func (as *AuthService) EncodeUserToken(claims *UserJwtPayload) (string, error) {
 
 	if err != nil {
 		authLogger.Warn("Failed to generate user jwt token: " + err.Error())
-		return "", errors.TokenGenerationFailed
+		return "", errors.ErrTokenGenerationFailed
 	}
 
 	return s, nil
+}
+
+func (as *AuthService) DecodeFileAccessToken(payload string) (*FileAccessJwtPayload, error) {
+	claims := FileAccessJwtPayload{}
+
+	token, err := jwt.ParseWithClaims(payload, &claims, as.accessTokenKeyFunc)
+
+	if err != nil || !token.Valid {
+		return nil, errors.ErrInvalidJwtToken
+	}
+
+	if err = claims.Validate(); err != nil {
+		return nil, err
+	}
+
+	return &claims, nil
 }
 
 func (as *AuthService) CreateFileAccessToken(
@@ -106,4 +122,12 @@ func (as *AuthService) AuthUser(email, passwd string) (string, error) {
 	}
 
 	return as.EncodeUserToken(&claims)
+}
+
+func (as *AuthService) accessTokenKeyFunc(token *jwt.Token) (interface{}, error) {
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		return nil, errors.ErrInvalidJwtToken
+	}
+
+	return as.JwtKey, nil
 }
