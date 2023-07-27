@@ -1,18 +1,34 @@
 package server
 
 import (
+	"context"
 	"strings"
+	"time"
 
 	"github.com/valyala/fasthttp"
+	"github.com/zanz1n/downloader/apps/node/config"
 	"github.com/zanz1n/downloader/dba"
 	"github.com/zanz1n/downloader/shared/auth"
 	"github.com/zanz1n/downloader/shared/errors"
 	"github.com/zanz1n/downloader/shared/utils"
 )
 
+func (s *Server) extractFileInfoById(id string) (*dba.GetFileUserAndNodeByIdRow, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	info, err := s.db.GetFileUserAndNodeById(ctx, id)
+
+	if err != nil {
+		return nil, errors.ErrFileNotFound
+	}
+
+	return info, nil
+}
+
 func (s *Server) ExtractFileAuthorization(
 	ctx *fasthttp.RequestCtx,
-	fileId, userId string,
+	fileId string,
 ) (auth.FileAccessPerm, error) {
 	authHeader := ctx.Request.Header.PeekBytes([]byte("authorization"))
 
@@ -33,11 +49,21 @@ func (s *Server) ExtractFileAuthorization(
 			return 0, errors.ErrFileAccessDenied
 		}
 
-		if claims.Permission == auth.FileAccessPermRead {
+		info, err := s.extractFileInfoById(fileId)
+
+		if err != nil {
+			return 0, err
+		}
+		cfg := config.GetConfig()
+
+		switch {
+		case info.NodeId != cfg.InstanceID:
+			return 0, errors.ErrFileNotLocatedInNode
+		case claims.Permission == auth.FileAccessPermRead:
 			return auth.FileAccessPermRead, nil
-		} else if claims.Permission == auth.FileAccessPermWrite {
+		case claims.Permission == auth.FileAccessPermWrite:
 			return auth.FileAccessPermWrite, nil
-		} else {
+		default:
 			return 0, errors.ErrFileAccessDenied
 		}
 	} else {
@@ -59,9 +85,19 @@ func (s *Server) ExtractFileAuthorization(
 				return 0, err
 			}
 
-			if claims.UserID == userId || claims.Role == dba.UserRoleADMIN {
+			info, err := s.extractFileInfoById(fileId)
+
+			if err != nil {
+				return 0, err
+			}
+			cfg := config.GetConfig()
+
+			switch {
+			case info.NodeId != cfg.InstanceID:
+				return 0, errors.ErrFileNotLocatedInNode
+			case info.UserId == claims.UserID || claims.Role == dba.UserRoleADMIN:
 				return auth.FileAccessPermWrite, nil
-			} else {
+			default:
 				return 0, errors.ErrFileAccessDenied
 			}
 		} else {
@@ -72,9 +108,9 @@ func (s *Server) ExtractFileAuthorization(
 
 func (s *Server) ExtractFileWriteAuthorization(
 	ctx *fasthttp.RequestCtx,
-	fileId, userId string,
+	fileId string,
 ) error {
-	perm, err := s.ExtractFileAuthorization(ctx, fileId, userId)
+	perm, err := s.ExtractFileAuthorization(ctx, fileId)
 
 	if err != nil {
 		return err
@@ -89,9 +125,9 @@ func (s *Server) ExtractFileWriteAuthorization(
 
 func (s *Server) ExtractFileReadAuthorization(
 	ctx *fasthttp.RequestCtx,
-	fileId, userId string,
+	fileId string,
 ) error {
-	perm, err := s.ExtractFileAuthorization(ctx, fileId, userId)
+	perm, err := s.ExtractFileAuthorization(ctx, fileId)
 
 	if err != nil {
 		return err
