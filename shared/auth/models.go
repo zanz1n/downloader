@@ -23,6 +23,18 @@ type UserJwtPayload struct {
 	Role       dba.UserRole `json:"role"`
 }
 
+func (p *UserJwtPayload) Validate() error {
+	if err := validate.Struct(p); err != nil {
+		return errors.ErrInvalidJwtToken
+	}
+
+	if p.ExpiryDate < time.Now().Unix() {
+		return errors.ErrExpiredJwtToken
+	}
+
+	return nil
+}
+
 func (p *UserJwtPayload) GetExpirationTime() (*jwt.NumericDate, error) {
 	return &jwt.NumericDate{
 		Time: time.Unix(p.ExpiryDate, 0),
