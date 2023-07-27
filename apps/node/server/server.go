@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/valyala/fasthttp"
+	"github.com/zanz1n/downloader/dba"
+	"github.com/zanz1n/downloader/shared/auth"
 	"github.com/zanz1n/downloader/shared/logger"
 	"github.com/zanz1n/downloader/shared/utils"
 )
@@ -15,14 +17,20 @@ var serverLogger = logger.NewLogger("server")
 
 type Server struct {
 	fhttp *fasthttp.Server
+	db    dba.Querier
+	as    *auth.AuthService
 }
 
-func NewServer() *Server {
+func NewServer(db dba.Querier, as *auth.AuthService) *Server {
+	fhttp := fasthttp.Server{
+		StreamRequestBody: true,
+		CloseOnShutdown:   true,
+	}
+
 	s := Server{
-		fhttp: &fasthttp.Server{
-			StreamRequestBody: true,
-			CloseOnShutdown:   true,
-		},
+		fhttp: &fhttp,
+		db:    db,
+		as:    as,
 	}
 
 	return &s
