@@ -59,6 +59,11 @@ var (
 		httpCode: 404,
 		message:  "The requested file could not be found",
 	}
+	statusFIleNotLocatedInNode = &statusErrorImpl{
+		code:     4043,
+		httpCode: 404,
+		message:  "The requested file is not located in this node",
+	}
 )
 
 var (
@@ -72,4 +77,5 @@ var (
 	ErrInvalidAuthHeader     = New("the provided authorization header is not valid")
 	ErrFileAccessDenied      = New("file access denied")
 	ErrFileNotFound          = New("file could not be found")
+	ErrFileNotLocatedInNode  = New("file is not located in this node")
 )
