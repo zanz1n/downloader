@@ -8,6 +8,9 @@ var mpe = map[error]StatusError{
 	ErrExpiredJwtToken:       statusExpiredJwtToken,
 	ErrInvalidJwtToken:       statusInvalidJwtToken,
 	ErrDecodeTokenUnknownErr: statusInternalServerError,
+	ErrInvalidAuthHeader:     statusInvalidAuthHeader,
+	ErrFileAccessDenied:      statusFileAccessDenied,
+	ErrFileNotFound:          statusFileNotFound,
 }
 
 var (
@@ -41,6 +44,21 @@ var (
 		httpCode: 401,
 		message:  "The provided authorization token is invalid",
 	}
+	statusInvalidAuthHeader = &statusErrorImpl{
+		code:     4015,
+		httpCode: 401,
+		message:  "The provided authorization header is not valid",
+	}
+	statusFileAccessDenied = &statusErrorImpl{
+		code:     4016,
+		httpCode: 401,
+		message:  "You do not have permission to access this file",
+	}
+	statusFileNotFound = &statusErrorImpl{
+		code:     4042,
+		httpCode: 404,
+		message:  "The requested file could not be found",
+	}
 )
 
 var (
@@ -51,4 +69,7 @@ var (
 	ErrInvalidJwtToken       = New("the provided authorization token is invalid")
 	ErrExpiredJwtToken       = New("the provided authorization token is expired")
 	ErrDecodeTokenUnknownErr = New("something went wrong while decoding the token")
+	ErrInvalidAuthHeader     = New("the provided authorization header is not valid")
+	ErrFileAccessDenied      = New("file access denied")
+	ErrFileNotFound          = New("file could not be found")
 )
