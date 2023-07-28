@@ -30,7 +30,6 @@ func NewAuthService(dba dba.Querier, options *Options) *AuthService {
 
 type AuthService struct {
 	*Options
-	userTokenDuration time.Duration
 	dba               dba.Querier
 	simSigning        jwt.SigningMethod
 	asimSigning       jwt.SigningMethod
@@ -132,7 +131,7 @@ func (as *AuthService) AuthUser(email, passwd string) (string, error) {
 	}
 
 	now := time.Now()
-	expiry := now.Add(as.userTokenDuration)
+	expiry := now.Add(as.UserTokenDuration)
 
 	claims := UserJwtPayload{
 		UserID:     info.ID,
