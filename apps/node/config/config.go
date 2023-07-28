@@ -52,7 +52,7 @@ type ConfigTcp struct {
 }
 
 type ConfigJwt struct {
-	Hkey    string `json:"hkey" yaml:"kkey"`
+	Hkey    string `json:"hkey" yaml:"hkey"`
 	PrivKey string `json:"privKey" yaml:"priv-key"`
 	PubKey  string `json:"pubKey" yaml:"pub-key"`
 }
