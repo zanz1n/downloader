@@ -46,19 +46,30 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 	return &i, err
 }
 
-const getFileUserAndNodeById = `-- name: GetFileUserAndNodeById :one
-SELECT "userId", "nodeId" FROM "files" WHERE id = $1
+const getFileAuthInfo = `-- name: GetFileAuthInfo :one
+SELECT "id", "name", "checksum", "userId", "nodeId", "contentType" FROM "files" WHERE id = $1
 `
 
-type GetFileUserAndNodeByIdRow struct {
-	UserId string `json:"userId"`
-	NodeId string `json:"nodeId"`
+type GetFileAuthInfoRow struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Checksum    string `json:"checksum"`
+	UserId      string `json:"userId"`
+	NodeId      string `json:"nodeId"`
+	ContentType string `json:"contentType"`
 }
 
-func (q *Queries) GetFileUserAndNodeById(ctx context.Context, id string) (*GetFileUserAndNodeByIdRow, error) {
-	row := q.db.QueryRow(ctx, getFileUserAndNodeById, id)
-	var i GetFileUserAndNodeByIdRow
-	err := row.Scan(&i.UserId, &i.NodeId)
+func (q *Queries) GetFileAuthInfo(ctx context.Context, id string) (*GetFileAuthInfoRow, error) {
+	row := q.db.QueryRow(ctx, getFileAuthInfo, id)
+	var i GetFileAuthInfoRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Checksum,
+		&i.UserId,
+		&i.NodeId,
+		&i.ContentType,
+	)
 	return &i, err
 }
 

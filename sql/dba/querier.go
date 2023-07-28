@@ -10,7 +10,7 @@ import (
 
 type Querier interface {
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
-	GetFileUserAndNodeById(ctx context.Context, id string) (*GetFileUserAndNodeByIdRow, error)
+	GetFileAuthInfo(ctx context.Context, id string) (*GetFileAuthInfoRow, error)
 	GetJwtInfoByEmail(ctx context.Context, email string) (*GetJwtInfoByEmailRow, error)
 	GetNodeById(ctx context.Context, id string) (*Node, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
