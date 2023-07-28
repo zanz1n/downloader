@@ -7,10 +7,14 @@ import (
 )
 
 var (
-	mailRegex = regexp.MustCompile(`^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$`)
-	validate  = validator.New()
+	mailRegex       = regexp.MustCompile(`^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$`)
+	validate        = validator.New()
 )
 
 func IsWeakPassword(passwd string) bool {
+	switch {
+	case len(passwd) < 8:
+		return true
+	}
 	return false
 }
