@@ -50,9 +50,16 @@ func main() {
 
 	db := dba.New(conn)
 
+	jwtPrivkey, jwtPubkey := auth.MustGetEdDSAPemKeypair(
+		cfg.Jwt.PrivKey,
+		cfg.Jwt.PubKey,
+	)
+
 	authService := auth.NewAuthService(db, &auth.Options{
 		UserTokenDuration: time.Hour,
-		JwtKey:            utils.S2B(cfg.JwtKey),
+		JwtHmacKey:        utils.S2B(cfg.Jwt.Hkey),
+		JwtEdDSAPrivKey:   jwtPrivkey,
+		JwtEdDSAPubKey:    jwtPubkey,
 	})
 
 	srv := server.NewServer(db, authService)
