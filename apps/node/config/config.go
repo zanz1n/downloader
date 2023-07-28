@@ -25,8 +25,8 @@ type Config struct {
 	// The uri of the postgres database
 	PostgresURI string `json:"postgresUri" yaml:"postgres-uri"`
 	// Jwt token keypair
-	JwtKey string     `json:"jwtKey" yaml:"jwt-key"`
-	App    *ConfigApp `json:"app" yaml:"app"`
+	Jwt string     `json:"jwt" yaml:"jwt"`
+	App *ConfigApp `json:"app" yaml:"app"`
 	// This configures the tcp server that will run for streaming files in
 	// a better speed
 	TCP *ConfigTcp `json:"tcp" yaml:"tcp"`
@@ -49,6 +49,12 @@ type ConfigTcp struct {
 	Enabled bool       `json:"enabled" yaml:"enabled"`
 	Port    int        `json:"port" yaml:"port" default:"2022"`
 	SSL     *ConfigSSl `json:"ssl" yaml:"ssl"`
+}
+
+type ConfigJwt struct {
+	Hkey    string `json:"hkey" yaml:"kkey"`
+	PrivKey string `json:"privKey" yaml:"priv-key"`
+	PubKey  string `json:"pubKey" yaml:"pub-key"`
 }
 
 var (
