@@ -77,6 +77,7 @@ func (s *Server) HandleError(c *fasthttp.RequestCtx, err error) {
 
 	c.SetBody(errBody.Marshal())
 	c.SetStatusCode(st.HttpCode())
+	c.SetContentType("application/json")
 }
 
 func (s *Server) HandleMethodNotAllowed(c *fasthttp.RequestCtx) {
