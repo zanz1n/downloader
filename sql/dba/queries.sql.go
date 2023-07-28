@@ -51,7 +51,7 @@ func (q *Queries) GetJwtInfoByEmail(ctx context.Context, email string) (*GetJwtI
 }
 
 const getNodeById = `-- name: GetNodeById :one
-SELECT id, name, description, address, ssl, capacity FROM "nodes" WHERE "id" = $1
+SELECT id, "createdAt", "updatedAt", name, description, address, ssl, capacity FROM "nodes" WHERE "id" = $1
 `
 
 func (q *Queries) GetNodeById(ctx context.Context, id string) (*Node, error) {
@@ -59,6 +59,8 @@ func (q *Queries) GetNodeById(ctx context.Context, id string) (*Node, error) {
 	var i Node
 	err := row.Scan(
 		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.Name,
 		&i.Description,
 		&i.Address,
@@ -69,7 +71,7 @@ func (q *Queries) GetNodeById(ctx context.Context, id string) (*Node, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, "firstName", "lastName", email, password, deleted, role FROM "users" WHERE "email" = $1
+SELECT id, "createdAt", "updatedAt", "firstName", "lastName", email, password, deleted, role FROM "users" WHERE "email" = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, error) {
@@ -77,6 +79,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.FirstName,
 		&i.LastName,
 		&i.Email,
@@ -88,7 +92,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (*User, erro
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, "firstName", "lastName", email, password, deleted, role FROM "users" WHERE "id" = $1
+SELECT id, "createdAt", "updatedAt", "firstName", "lastName", email, password, deleted, role FROM "users" WHERE "id" = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id string) (*User, error) {
@@ -96,6 +100,8 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (*User, error) {
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.FirstName,
 		&i.LastName,
 		&i.Email,

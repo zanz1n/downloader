@@ -7,6 +7,8 @@ package dba
 import (
 	"database/sql/driver"
 	"fmt"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type UserRole string
@@ -52,30 +54,36 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 }
 
 type File struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	ContentType string `json:"contentType"`
-	Size        int32  `json:"size"`
-	Checksum    string `json:"checksum"`
-	NodeId      string `json:"nodeId"`
-	UserId      string `json:"userId"`
+	ID          string           `json:"id"`
+	CreatedAt   pgtype.Timestamp `json:"createdAt"`
+	UpdatedAt   pgtype.Timestamp `json:"updatedAt"`
+	Name        string           `json:"name"`
+	ContentType string           `json:"contentType"`
+	Size        int32            `json:"size"`
+	Checksum    string           `json:"checksum"`
+	NodeId      string           `json:"nodeId"`
+	UserId      string           `json:"userId"`
 }
 
 type Node struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Address     string `json:"address"`
-	Ssl         bool   `json:"ssl"`
-	Capacity    int32  `json:"capacity"`
+	ID          string           `json:"id"`
+	CreatedAt   pgtype.Timestamp `json:"createdAt"`
+	UpdatedAt   pgtype.Timestamp `json:"updatedAt"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Address     string           `json:"address"`
+	Ssl         bool             `json:"ssl"`
+	Capacity    int32            `json:"capacity"`
 }
 
 type User struct {
-	ID        string   `json:"id"`
-	FirstName string   `json:"firstName"`
-	LastName  string   `json:"lastName"`
-	Email     string   `json:"email"`
-	Password  string   `json:"password"`
-	Deleted   bool     `json:"deleted"`
-	Role      UserRole `json:"role"`
+	ID        string           `json:"id"`
+	CreatedAt pgtype.Timestamp `json:"createdAt"`
+	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
+	FirstName string           `json:"firstName"`
+	LastName  string           `json:"lastName"`
+	Email     string           `json:"email"`
+	Password  string           `json:"password"`
+	Deleted   bool             `json:"deleted"`
+	Role      UserRole         `json:"role"`
 }
