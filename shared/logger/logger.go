@@ -211,24 +211,40 @@ func (cfg *LoggerLevel) WillLog(target LoggerLevel) bool {
 	}
 }
 
+func left10(n int) string {
+	ns := strconv.Itoa(n)
+
+	if n < 10 {
+		ns = "0" + ns
+	}
+	return ns
+}
+
 func nowFormated() string {
 	now := time.Now()
 
 	ms := now.Nanosecond() / 1000
 	mss := strconv.Itoa(ms)
 
-	if ms < 10 {
+	switch {
+	case ms < 10:
+		mss = "00000" + mss
+	case ms < 100:
+		mss = "0000" + mss
+	case ms < 1000:
+		mss = "000" + mss
+	case ms < 10000:
 		mss = "00" + mss
-	} else if ms < 100 {
+	case ms < 100000:
 		mss = "0" + mss
 	}
 
 	return strconv.Itoa(now.Year()) + "/" +
-		strconv.Itoa(int(now.Month())) + "/" +
-		strconv.Itoa(now.Day()) + " " +
-		strconv.Itoa(now.Hour()) + ":" +
-		strconv.Itoa(now.Minute()) + ":" +
-		strconv.Itoa(now.Second()) + "." +
+		left10(int(now.Month())) + "/" +
+		left10(now.Day()) + " " +
+		left10(now.Hour()) + ":" +
+		left10(now.Minute()) + ":" +
+		left10(now.Second()) + "." +
 		mss
 }
 
