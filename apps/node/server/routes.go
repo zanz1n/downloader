@@ -1,44 +1,12 @@
 package server
 
 import (
-	"mime"
 	"os"
 
 	"github.com/valyala/fasthttp"
 	"github.com/zanz1n/downloader/apps/node/config"
 	"github.com/zanz1n/downloader/shared/logger"
 )
-
-func sanitizeFileName(name string, contentType string) string {
-	foundDot := false
-	for i := len(name); i != 0; i-- {
-		if name[i] == '.' {
-			foundDot = true
-			break
-		}
-	}
-
-	if foundDot {
-		return name
-	}
-
-	exts, err := mime.ExtensionsByType(contentType)
-
-	if err == nil && exts != nil {
-		if len(exts) > 0 {
-			ext := exts[0]
-
-			if len(ext) > 0 {
-				if ext[0] != '.' {
-					ext = "." + ext
-				}
-			}
-
-			name = name + ext
-		}
-	}
-	return name
-}
 
 func (s *Server) HandleGetFile(c *fasthttp.RequestCtx) {
 	fileId, ok := c.UserValue("id").(string)
