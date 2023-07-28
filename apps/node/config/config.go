@@ -25,7 +25,7 @@ type Config struct {
 	// The uri of the postgres database
 	PostgresURI string `json:"postgresUri" yaml:"postgres-uri"`
 	// Jwt token keypair
-	Jwt string     `json:"jwt" yaml:"jwt"`
+	Jwt *ConfigJwt `json:"jwt" yaml:"jwt"`
 	App *ConfigApp `json:"app" yaml:"app"`
 	// This configures the tcp server that will run for streaming files in
 	// a better speed
@@ -75,8 +75,10 @@ func (c *Config) IsValid() error {
 	}
 
 	switch {
-	case c.JwtKey == "":
-		return errors.New("config: jwt key must be provided")
+	case c.Jwt == nil:
+		return errors.New("config: jwt config must be provided")
+	case c.Jwt.Hkey == "":
+		return errors.New("config: jwt 'hkey' prop must not be empty")
 	case c.PostgresURI == "":
 		return errors.New("config: postgres uri must not be empty")
 	case c.App == nil:
