@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/ed25519"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -13,14 +14,17 @@ import (
 
 type Options struct {
 	UserTokenDuration time.Duration
-	JwtKey            []byte
+	JwtHmacKey        []byte
+	JwtEdDSAPrivKey   ed25519.PrivateKey
+	JwtEdDSAPubKey    ed25519.PublicKey
 }
 
 func NewAuthService(dba dba.Querier, options *Options) *AuthService {
 	return &AuthService{
-		Options:       options,
-		dba:           dba,
-		signingMethod: jwt.SigningMethodHS256,
+		Options:     options,
+		dba:         dba,
+		simSigning:  jwt.SigningMethodHS256,
+		asimSigning: jwt.SigningMethodEdDSA,
 	}
 }
 
@@ -28,13 +32,14 @@ type AuthService struct {
 	*Options
 	userTokenDuration time.Duration
 	dba               dba.Querier
-	signingMethod     jwt.SigningMethod
+	simSigning        jwt.SigningMethod
+	asimSigning       jwt.SigningMethod
 }
 
 func (as *AuthService) EncodeFileAccessToken(claims *FileAccessJwtPayload) (string, error) {
-	token := jwt.NewWithClaims(as.signingMethod, claims)
+	token := jwt.NewWithClaims(as.simSigning, claims)
 
-	s, err := token.SignedString(as.JwtKey)
+	s, err := token.SignedString(as.JwtHmacKey)
 
 	if err != nil {
 		authLogger.Warn("Failed to generate file access jwt token: " + err.Error())
@@ -45,9 +50,9 @@ func (as *AuthService) EncodeFileAccessToken(claims *FileAccessJwtPayload) (stri
 }
 
 func (as *AuthService) EncodeUserToken(claims *UserJwtPayload) (string, error) {
-	token := jwt.NewWithClaims(as.signingMethod, claims)
+	token := jwt.NewWithClaims(as.asimSigning, claims)
 
-	s, err := token.SignedString(as.JwtKey)
+	s, err := token.SignedString(as.JwtEdDSAPrivKey)
 
 	if err != nil {
 		authLogger.Warn("Failed to generate user jwt token: " + err.Error())
@@ -145,13 +150,13 @@ func (as *AuthService) accessTokenKeyFunc(token *jwt.Token) (interface{}, error)
 		return nil, errors.ErrInvalidJwtToken
 	}
 
-	return as.JwtKey, nil
+	return as.JwtHmacKey, nil
 }
 
 func (as *AuthService) userTokenKeyFunc(token *jwt.Token) (interface{}, error) {
-	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+	if _, ok := token.Method.(*jwt.SigningMethodEd25519); !ok {
 		return nil, errors.ErrInvalidJwtToken
 	}
 
-	return as.JwtKey, nil
+	return as.JwtEdDSAPubKey, nil
 }
