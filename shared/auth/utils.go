@@ -56,7 +56,7 @@ func GetEdDSAPemKeypair(
 		return nil, nil, fmt.Errorf("private key is not a valid PKCS8 key")
 	}
 
-	pubkey, err := x509.ParsePKIXPublicKey(privBlock.Bytes)
+	pubkey, err := x509.ParsePKIXPublicKey(pubBlock.Bytes)
 	if err != nil {
 		return nil, nil, fmt.Errorf("public key is not a valid PKIX key")
 	}
