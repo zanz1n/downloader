@@ -88,7 +88,7 @@ func (q *Queries) GetJwtInfoByEmail(ctx context.Context, email string) (*GetJwtI
 }
 
 const getNodeById = `-- name: GetNodeById :one
-SELECT id, "createdAt", "updatedAt", name, description, address, ssl, capacity FROM "nodes" WHERE "id" = $1
+SELECT id, "createdAt", "updatedAt", name, description, address, port, tcp, "tcpPort", ssl, capacity FROM "nodes" WHERE "id" = $1
 `
 
 func (q *Queries) GetNodeById(ctx context.Context, id string) (*Node, error) {
@@ -101,6 +101,9 @@ func (q *Queries) GetNodeById(ctx context.Context, id string) (*Node, error) {
 		&i.Name,
 		&i.Description,
 		&i.Address,
+		&i.Port,
+		&i.Tcp,
+		&i.TcpPort,
 		&i.Ssl,
 		&i.Capacity,
 	)
