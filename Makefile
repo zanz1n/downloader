@@ -3,3 +3,6 @@ build-node:
 
 run-node:
 	go run ./apps/node/main.go --config ./data/config.yml
+
+test:
+	go test ./shared/... --race
