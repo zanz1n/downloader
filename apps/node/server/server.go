@@ -45,6 +45,7 @@ func (s *Server) wireRoutes() {
 	s.fhttp.Handler = s.Handler
 
 	s.r.GET("/file/{id}", s.HandleGetFile)
+	s.r.GET("/file/{id}/proxy", s.HandleProxiedGetFile)
 }
 
 func (s *Server) Handler(ctx *fasthttp.RequestCtx) {

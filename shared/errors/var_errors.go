@@ -19,6 +19,9 @@ var mpe = map[error]StatusError{
 	ErrPasswordWeak:           statusPasswordWeak,
 	ErrUsernameTooLarge:       statusUsernameTooLarge,
 	ErrNanoIdGenerationFailed: statusInternalServerError,
+	ErrHashingFailed:          statusInternalServerError,
+	ErrInvalidSignature:       statusInvalidSignature,
+	ErrRndQueryNotProvided:    statusRndQueryNotProvided,
 }
 
 var (
@@ -102,6 +105,16 @@ var (
 		httpCode: 400,
 		message:  "The provided username is too large to be used",
 	}
+	statusInvalidSignature = &statusErrorImpl{
+		code:     4017,
+		httpCode: 401,
+		message:  "The signature hash is not valid",
+	}
+	statusRndQueryNotProvided = &statusErrorImpl{
+		code:     4006,
+		httpCode: 400,
+		message:  "The 'rnd' query parameter was not provided",
+	}
 )
 
 var (
@@ -123,4 +136,7 @@ var (
 	ErrPasswordWeak           = New("the provided password can not be used, too weak")
 	ErrUsernameTooLarge       = New("the provided username is too large to be used")
 	ErrNanoIdGenerationFailed = New("failed to generate nanoid")
+	ErrHashingFailed          = New("hashing proccess failed")
+	ErrInvalidSignature       = New("the signature hash is not valid")
+	ErrRndQueryNotProvided    = New("the 'rnd' query parameter was not provided")
 )

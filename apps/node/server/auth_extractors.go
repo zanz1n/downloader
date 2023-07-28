@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/sha256"
 	"strings"
 	"time"
 
@@ -10,27 +11,23 @@ import (
 	"github.com/zanz1n/downloader/dba"
 	"github.com/zanz1n/downloader/shared/auth"
 	"github.com/zanz1n/downloader/shared/errors"
+	"github.com/zanz1n/downloader/shared/logger"
 	"github.com/zanz1n/downloader/shared/utils"
 )
 
-func (s *Server) extractFileInfoById(id string) (*dba.GetFileAuthInfoRow, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	info, err := s.db.GetFileAuthInfo(ctx, id)
-
-	if err != nil {
-		return nil, errors.ErrFileNotFound
-	}
-
-	return info, nil
+type AuthHeader struct {
+	SigningType string
+	Token       string
 }
 
 func (s *Server) ExtractFileAuthorization(
 	ctx *fasthttp.RequestCtx,
 	fileId string,
 ) (auth.FileAccessPerm, *dba.GetFileAuthInfoRow, error) {
-	authHeader := ctx.Request.Header.PeekBytes([]byte("authorization"))
+	authHeader, err := s.ExtractAuthorizationHeader(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
 
 	if authHeader == nil {
 		authQuery := ctx.URI().QueryArgs().PeekBytes([]byte("access_token"))
@@ -67,19 +64,8 @@ func (s *Server) ExtractFileAuthorization(
 			return 0, nil, errors.ErrFileAccessDenied
 		}
 	} else {
-		if len(authHeader) < 11 {
-			return 0, nil, errors.ErrInvalidAuthHeader
-		}
-
-		authHeaderS := strings.Split(utils.B2S(authHeader), " ")
-		if len(authHeaderS) != 2 {
-			return 0, nil, errors.ErrInvalidAuthHeader
-		}
-
-		method, token := authHeaderS[0], authHeaderS[1]
-
-		if method == "Bearer" {
-			claims, err := s.as.DecodeUserToken(token)
+		if authHeader.SigningType == "Bearer" {
+			claims, err := s.as.DecodeUserToken(authHeader.Token)
 
 			if err != nil {
 				return 0, nil, err
@@ -138,4 +124,61 @@ func (s *Server) ExtractFileReadAuthorization(
 	} else {
 		return nil, errors.ErrFileAccessDenied
 	}
+}
+
+func (s *Server) ExtractAuthorizationHeader(c *fasthttp.RequestCtx) (*AuthHeader, error) {
+	authHeader := c.Request.Header.Peek("Authorization")
+
+	if authHeader == nil {
+		return nil, nil
+	}
+
+	authHeaderS := strings.Split(utils.B2S(authHeader), " ")
+	if len(authHeaderS) != 2 {
+		return nil, errors.ErrInvalidAuthHeader
+	}
+
+	return &AuthHeader{
+		SigningType: authHeaderS[0],
+		Token:       authHeaderS[1],
+	}, nil
+}
+
+func (s *Server) ExtractSignatureAuthorization(c *fasthttp.RequestCtx, p []byte) error {
+	authHeader, err := s.ExtractAuthorizationHeader(c)
+	if err != nil {
+		return err
+	} else if authHeader == nil {
+		return errors.ErrRouteRequiresAuth
+	}
+
+	hash := sha256.New()
+	if _, err := hash.Write(p); err != nil {
+		logger.Error("Hashing failed: " + err.Error())
+		return errors.ErrHashingFailed
+	}
+	if _, err := hash.Write(utils.S2B(config.GetConfig().Key)); err != nil {
+		logger.Error("Hashing failed: " + err.Error())
+		return errors.ErrHashingFailed
+	}
+
+	buf := utils.B2S(hash.Sum([]byte{}))
+
+	if buf != authHeader.Token {
+		return errors.ErrInvalidSignature
+	}
+	return nil
+}
+
+func (s *Server) extractFileInfoById(id string) (*dba.GetFileAuthInfoRow, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	info, err := s.db.GetFileAuthInfo(ctx, id)
+
+	if err != nil {
+		return nil, errors.ErrFileNotFound
+	}
+
+	return info, nil
 }
