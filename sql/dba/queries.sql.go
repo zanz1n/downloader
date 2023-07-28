@@ -26,7 +26,7 @@ func (q *Queries) GetFileUserAndNodeById(ctx context.Context, id string) (*GetFi
 }
 
 const getJwtInfoByEmail = `-- name: GetJwtInfoByEmail :one
-SELECT "id", "email", "password", "role" FROM "users" WHERE "email" = $1
+SELECT "id", "email", "password", "role", "deleted" FROM "users" WHERE "email" = $1
 `
 
 type GetJwtInfoByEmailRow struct {
@@ -34,6 +34,7 @@ type GetJwtInfoByEmailRow struct {
 	Email    string   `json:"email"`
 	Password string   `json:"password"`
 	Role     UserRole `json:"role"`
+	Deleted  bool     `json:"deleted"`
 }
 
 func (q *Queries) GetJwtInfoByEmail(ctx context.Context, email string) (*GetJwtInfoByEmailRow, error) {
@@ -44,6 +45,7 @@ func (q *Queries) GetJwtInfoByEmail(ctx context.Context, email string) (*GetJwtI
 		&i.Email,
 		&i.Password,
 		&i.Role,
+		&i.Deleted,
 	)
 	return &i, err
 }

@@ -117,7 +117,7 @@ func (as *AuthService) AuthUser(email, passwd string) (string, error) {
 
 	info, err := as.dba.GetJwtInfoByEmail(ctx, email)
 
-	if err != nil {
+	if err != nil || info.Deleted {
 		return "", errors.ErrUserAuthFailed
 	}
 

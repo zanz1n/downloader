@@ -8,7 +8,7 @@ SELECT * FROM "users" WHERE "email" = $1;
 SELECT * FROM "users" WHERE "id" = $1;
 
 -- name: GetJwtInfoByEmail :one
-SELECT "id", "email", "password", "role" FROM "users" WHERE "email" = $1;
+SELECT "id", "email", "password", "role", "deleted" FROM "users" WHERE "email" = $1;
 
 -- name: GetFileUserAndNodeById :one
 SELECT "userId", "nodeId" FROM "files" WHERE id = $1;
