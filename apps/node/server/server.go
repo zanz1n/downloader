@@ -1,10 +1,10 @@
 package server
 
 import (
-	"log"
 	"os"
 	"time"
 
+	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"github.com/zanz1n/downloader/dba"
 	"github.com/zanz1n/downloader/shared/auth"
@@ -16,6 +16,7 @@ import (
 var serverLogger = logger.NewLogger("server")
 
 type Server struct {
+	r     *router.Router
 	fhttp *fasthttp.Server
 	db    dba.Querier
 	as    *auth.AuthService
@@ -26,20 +27,30 @@ func NewServer(db dba.Querier, as *auth.AuthService) *Server {
 		StreamRequestBody: true,
 		CloseOnShutdown:   true,
 	}
+	r := router.New()
 
 	s := Server{
 		fhttp: &fhttp,
 		db:    db,
 		as:    as,
 	}
+	r.MethodNotAllowed = s.HandleMethodNotAllowed
+	r.NotFound = s.HandleNotFound
+	s.r = r
 
 	return &s
+}
+
+func (s *Server) wireRoutes() {
+	s.fhttp.Handler = s.Handler
+
+	s.r.GET("/file/{id}", s.HandleGetFile)
 }
 
 func (s *Server) Handler(ctx *fasthttp.RequestCtx) {
 	startTime := time.Now()
 
-	ctx.SetStatusCode(404)
+	s.r.Handler(ctx)
 
 	logger.LogRequest(&logger.RequestInfo{
 		Addr:       ctx.RemoteAddr(),
@@ -48,8 +59,6 @@ func (s *Server) Handler(ctx *fasthttp.RequestCtx) {
 		StatusCode: ctx.Response.StatusCode(),
 		Duration:   time.Since(startTime),
 	})
-
-	log.Println(time.Since(startTime))
 }
 
 func (s *Server) Shutdown() {
@@ -67,6 +76,14 @@ func (s *Server) HandleError(c *fasthttp.RequestCtx, err error) {
 
 	c.SetBody(errBody.Marshal())
 	c.SetStatusCode(st.HttpCode())
+}
+
+func (s *Server) HandleMethodNotAllowed(c *fasthttp.RequestCtx) {
+	c.Response.SetStatusCode(405)
+}
+
+func (s *Server) HandleNotFound(c *fasthttp.RequestCtx) {
+	c.Response.SetStatusCode(404)
 }
 
 func (s *Server) MustListenAndServeTLS(addr, certPath, keyPath string) {
@@ -87,8 +104,7 @@ func (s *Server) ListenAndServeTLS(addr, certPath, keyPath string) error {
 	if err != nil {
 		return errors.New("failed to open ssl key at " + certPath)
 	}
-
-	s.fhttp.Handler = s.Handler
+	s.wireRoutes()
 
 	serverLogger.Info("Listening with tls for " + addr)
 
@@ -102,7 +118,7 @@ func (s *Server) MustListenAndServe(addr string) {
 }
 
 func (s *Server) ListenAndServe(addr string) error {
-	s.fhttp.Handler = s.Handler
+	s.wireRoutes()
 
 	serverLogger.Info("Listening for " + addr)
 
