@@ -9,6 +9,43 @@ import (
 	"context"
 )
 
+const createUser = `-- name: CreateUser :one
+INSERT INTO "users" ("id", "firstName", "lastName", "email", "password", "role") VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, "createdAt", "updatedAt", "firstName", "lastName", email, password, deleted, role
+`
+
+type CreateUserParams struct {
+	ID        string   `json:"id"`
+	FirstName string   `json:"firstName"`
+	LastName  string   `json:"lastName"`
+	Email     string   `json:"email"`
+	Password  string   `json:"password"`
+	Role      UserRole `json:"role"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
+	row := q.db.QueryRow(ctx, createUser,
+		arg.ID,
+		arg.FirstName,
+		arg.LastName,
+		arg.Email,
+		arg.Password,
+		arg.Role,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.Deleted,
+		&i.Role,
+	)
+	return &i, err
+}
+
 const getFileUserAndNodeById = `-- name: GetFileUserAndNodeById :one
 SELECT "userId", "nodeId" FROM "files" WHERE id = $1
 `

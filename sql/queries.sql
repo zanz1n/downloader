@@ -12,3 +12,6 @@ SELECT "id", "email", "password", "role", "deleted" FROM "users" WHERE "email" =
 
 -- name: GetFileUserAndNodeById :one
 SELECT "userId", "nodeId" FROM "files" WHERE id = $1;
+
+-- name: CreateUser :one
+INSERT INTO "users" ("id", "firstName", "lastName", "email", "password", "role") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
