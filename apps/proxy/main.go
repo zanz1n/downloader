@@ -76,4 +76,7 @@ func main() {
 	}
 
 	<-endCh
+
+	srv.Shutdown()
+	conn.Close(context.Background())
 }
