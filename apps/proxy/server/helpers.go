@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"mime"
 
+	"github.com/goccy/go-json"
+	"github.com/valyala/fasthttp"
 	"github.com/zanz1n/downloader/proxy/config"
 	"github.com/zanz1n/downloader/shared/errors"
 	"github.com/zanz1n/downloader/shared/logger"
@@ -41,6 +43,19 @@ func sanitizeFileName(name string, contentType string) string {
 		}
 	}
 	return name
+}
+
+func respondJson(c *fasthttp.RequestCtx, v any) {
+	c.SetContentType("application/json")
+
+	buf, err := json.Marshal(v)
+	if err != nil {
+		c.SetStatusCode(500)
+		c.SetBody([]byte("{\"message\":\"Failed to marshal response body\",\"errorCode\":5000}"))
+		return
+	}
+
+	c.SetBody(buf)
 }
 
 func generateSignature(rnd []byte) ([]byte, error) {
