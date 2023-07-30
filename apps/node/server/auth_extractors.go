@@ -54,7 +54,7 @@ func (s *Server) ExtractSignatureAuthorization(c *fasthttp.RequestCtx, p []byte)
 	}
 
 	buf := hash.Sum([]byte{})
-	base64Buf := []byte{}
+	base64Buf := make([]byte, base64.StdEncoding.EncodedLen(len(buf)))
 
 	base64.StdEncoding.Encode(base64Buf, buf)
 

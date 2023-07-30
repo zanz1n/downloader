@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"os"
 	"time"
 
@@ -17,11 +18,12 @@ import (
 var serverLogger = logger.NewLogger("server")
 
 type Server struct {
-	r     *router.Router
-	fhttp *fasthttp.Server
-	db    dba.Querier
-	as    *auth.AuthService
-	us    *user.UserService
+	r      *router.Router
+	fhttp  *fasthttp.Server
+	db     dba.Querier
+	as     *auth.AuthService
+	us     *user.UserService
+	client *fasthttp.Client
 }
 
 func NewServer(db dba.Querier, as *auth.AuthService, us *user.UserService) *Server {
@@ -36,6 +38,11 @@ func NewServer(db dba.Querier, as *auth.AuthService, us *user.UserService) *Serv
 		db:    db,
 		as:    as,
 		us:    us,
+		client: &fasthttp.Client{
+			TLSConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
 	}
 	r.MethodNotAllowed = s.HandleMethodNotAllowed
 	r.NotFound = s.HandleNotFound

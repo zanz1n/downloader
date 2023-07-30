@@ -71,9 +71,11 @@ func generateSignature(rnd []byte) ([]byte, error) {
 		return nil, errors.ErrHashingFailed
 	}
 
-	base64Buf := []byte{}
+	buf := hash.Sum([]byte{})
 
-	base64.StdEncoding.Encode(base64Buf, hash.Sum([]byte{}))
+	base64Buf := make([]byte, base64.StdEncoding.EncodedLen(len(buf)))
+
+	base64.StdEncoding.Encode(base64Buf, buf)
 
 	return base64Buf, nil
 }
@@ -85,9 +87,9 @@ func randomString(l int) (string, error) {
 		logger.Error("Failed to read os random reader :" + err.Error())
 		return "", errors.ErrHashingFailed
 	}
-	bo := []byte{}
+	bo := make([]byte, base64.StdEncoding.EncodedLen(len(b)))
 
-	base64.RawStdEncoding.Encode(bo, b)
+	base64.StdEncoding.Encode(bo, b)
 
 	return utils.B2S(bo), nil
 }
