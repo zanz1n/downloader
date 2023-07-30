@@ -2,7 +2,7 @@ package server
 
 import (
 	"crypto/sha256"
-	"encoding/base64"
+	"encoding/hex"
 	"strings"
 
 	"github.com/valyala/fasthttp"
@@ -54,11 +54,11 @@ func (s *Server) ExtractSignatureAuthorization(c *fasthttp.RequestCtx, p []byte)
 	}
 
 	buf := hash.Sum([]byte{})
-	base64Buf := make([]byte, base64.StdEncoding.EncodedLen(len(buf)))
+	hexBuf := make([]byte, len(buf)*2)
 
-	base64.StdEncoding.Encode(base64Buf, buf)
+	hex.Encode(hexBuf, buf)
 
-	if string(base64Buf) != authHeader.Token {
+	if string(hexBuf) != authHeader.Token {
 		return errors.ErrInvalidSignature
 	}
 	return nil

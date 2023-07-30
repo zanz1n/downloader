@@ -3,7 +3,7 @@ package server
 import (
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
+	"encoding/hex"
 	"mime"
 
 	"github.com/goccy/go-json"
@@ -17,7 +17,7 @@ import (
 func sanitizeFileName(name string, contentType string) string {
 	foundDot := false
 	if len(name) > 2 {
-		for i := len(name)-1; i > 0; i-- {
+		for i := len(name) - 1; i > 0; i-- {
 			logger.Debug("%v", i)
 			if name[i] == '.' {
 				foundDot = true
@@ -75,12 +75,11 @@ func generateSignature(rnd []byte) ([]byte, error) {
 	}
 
 	buf := hash.Sum([]byte{})
+	hexBuf := make([]byte, len(buf)*2)
 
-	base64Buf := make([]byte, base64.StdEncoding.EncodedLen(len(buf)))
+	hex.Encode(hexBuf, buf)
 
-	base64.StdEncoding.Encode(base64Buf, buf)
-
-	return base64Buf, nil
+	return hexBuf, nil
 }
 
 func randomString(l int) (string, error) {
@@ -90,9 +89,9 @@ func randomString(l int) (string, error) {
 		logger.Error("Failed to read os random reader :" + err.Error())
 		return "", errors.ErrHashingFailed
 	}
-	bo := make([]byte, base64.StdEncoding.EncodedLen(len(b)))
+	bo := make([]byte, len(b)*2)
 
-	base64.StdEncoding.Encode(bo, b)
+	hex.Encode(bo, b)
 
 	return utils.B2S(bo), nil
 }
