@@ -22,6 +22,7 @@ type Config struct {
 	JWTHmacKey     string
 	JWTPrivkeyPath string
 	JWTPubkeyPath  string
+	AllowSignUp    bool
 }
 
 var config *Config
@@ -45,6 +46,11 @@ func FromEnv() error {
 		JWTHmacKey:     os.Getenv("APP_JWT_HMAC_KEY"),
 		JWTPrivkeyPath: os.Getenv("APP_JWT_ED_PRIVKEY"),
 		JWTPubkeyPath:  os.Getenv("APP_JWT_ED_PUBKEY"),
+		AllowSignUp:    false,
+	}
+
+	if allow := os.Getenv("APP_ALLOW_SIGNUP"); allow == "true" || allow == "1" {
+		config.AllowSignUp = true
 	}
 
 	if port := os.Getenv("APP_PORT"); port != "" {
