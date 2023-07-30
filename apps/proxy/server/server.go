@@ -7,7 +7,7 @@ import (
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 	"github.com/zanz1n/downloader/dba"
-	"github.com/zanz1n/downloader/shared/auth"
+	"github.com/zanz1n/downloader/proxy/repository/auth"
 	"github.com/zanz1n/downloader/shared/errors"
 	"github.com/zanz1n/downloader/shared/logger"
 	"github.com/zanz1n/downloader/shared/utils"

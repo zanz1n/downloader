@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/valyala/fasthttp"
-	"github.com/zanz1n/downloader/apps/node/config"
+	"github.com/zanz1n/downloader/node/config"
 	"github.com/zanz1n/downloader/shared/errors"
 	"github.com/zanz1n/downloader/shared/logger"
 )

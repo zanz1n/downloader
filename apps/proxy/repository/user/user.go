@@ -6,7 +6,7 @@ import (
 
 	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/zanz1n/downloader/dba"
-	"github.com/zanz1n/downloader/shared/auth"
+	"github.com/zanz1n/downloader/proxy/repository/auth"
 	"github.com/zanz1n/downloader/shared/errors"
 )
 

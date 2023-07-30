@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/zanz1n/downloader/dba"
-	"github.com/zanz1n/downloader/shared/auth"
+	"github.com/zanz1n/downloader/proxy/repository/auth"
 )
 
 func mockQuerier() dba.Querier {

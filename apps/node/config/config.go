@@ -22,8 +22,6 @@ type Config struct {
 	// Can and will be change during runtime. Is the Key that will sign
 	// every restricted api request.
 	Key string `json:"key" yaml:"key"`
-	// The uri of the postgres database
-	PostgresURI string `json:"postgresUri" yaml:"postgres-uri"`
 	// Jwt token keypair
 	Jwt *ConfigJwt `json:"jwt" yaml:"jwt"`
 	App *ConfigApp `json:"app" yaml:"app"`
@@ -79,8 +77,6 @@ func (c *Config) IsValid() error {
 		return errors.New("config: jwt config must be provided")
 	case c.Jwt.Hkey == "":
 		return errors.New("config: jwt 'hkey' prop must not be empty")
-	case c.PostgresURI == "":
-		return errors.New("config: postgres uri must not be empty")
 	case c.App == nil:
 		return errors.New("config: 'app' prop must be provided")
 	case c.TCP == nil:
