@@ -23,6 +23,7 @@ var mpe = map[error]StatusError{
 	ErrInvalidSignature:       statusInvalidSignature,
 	ErrRndQueryNotProvided:    statusRndQueryNotProvided,
 	ErrFailedToFetchFileNode:  statusInternalServerError,
+	ErrSignupNotAllowed:       statusSignupNotAllowed,
 }
 
 var (
@@ -116,6 +117,11 @@ var (
 		httpCode: 400,
 		message:  "The 'rnd' query parameter was not provided",
 	}
+	statusSignupNotAllowed = &statusErrorImpl{
+		code:     4031,
+		httpCode: 403,
+		message:  "User signup is not allowed in this server, please contact an administrator for create an account",
+	}
 )
 
 var (
@@ -141,4 +147,5 @@ var (
 	ErrInvalidSignature       = New("the signature hash is not valid")
 	ErrRndQueryNotProvided    = New("the 'rnd' query parameter was not provided")
 	ErrFailedToFetchFileNode  = New("failed to fetch the node that the file is located")
+	ErrSignupNotAllowed       = New("user signup's are not allowed in this server")
 )
