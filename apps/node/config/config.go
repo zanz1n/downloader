@@ -23,18 +23,17 @@ type Config struct {
 	// every restricted api request.
 	Key string `json:"key" yaml:"key"`
 	// Jwt token keypair
-	Jwt *ConfigJwt `json:"jwt" yaml:"jwt"`
 	App *ConfigApp `json:"app" yaml:"app"`
-	// This configures the tcp server that will run for streaming files in
-	// a better speed
-	TCP *ConfigTcp `json:"tcp" yaml:"tcp"`
 }
 
 type ConfigApp struct {
 	// The directory that the program will try to save the files
-	DataDir string     `json:"dataDir" yaml:"data-dir" default:"/var/downloader/data"`
-	Port    int        `json:"port" yaml:"port" default:"8080"`
-	SSL     *ConfigSSl `json:"ssl" yaml:"ssl"`
+	DataDir string `json:"dataDir" yaml:"data-dir" default:"/var/downloader/data"`
+	// This configures the tcp server that will run for streaming files in
+	// a better speed
+	TCP  *ConfigTcp `json:"tcp" yaml:"tcp"`
+	Port int        `json:"port" yaml:"port" default:"8080"`
+	SSL  *ConfigSSl `json:"ssl" yaml:"ssl"`
 }
 
 type ConfigSSl struct {
@@ -44,9 +43,8 @@ type ConfigSSl struct {
 }
 
 type ConfigTcp struct {
-	Enabled bool       `json:"enabled" yaml:"enabled"`
-	Port    int        `json:"port" yaml:"port" default:"2022"`
-	SSL     *ConfigSSl `json:"ssl" yaml:"ssl"`
+	Enabled bool `json:"enabled" yaml:"enabled"`
+	Port    int  `json:"port" yaml:"port" default:"2022"`
 }
 
 type ConfigJwt struct {
@@ -73,23 +71,14 @@ func (c *Config) IsValid() error {
 	}
 
 	switch {
-	case c.Jwt == nil:
-		return errors.New("config: jwt config must be provided")
-	case c.Jwt.Hkey == "":
-		return errors.New("config: jwt 'hkey' prop must not be empty")
 	case c.App == nil:
 		return errors.New("config: 'app' prop must be provided")
-	case c.TCP == nil:
+	case c.App.TCP == nil:
 		return errors.New("config: 'tcp' prop must be provided")
 	}
 
 	if err = validateSSL(c.App.SSL); err != nil {
 		return err
-	}
-	if c.TCP.Enabled {
-		if err = validateSSL(c.TCP.SSL); err != nil {
-			return err
-		}
 	}
 
 	return nil
