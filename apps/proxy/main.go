@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 	"github.com/zanz1n/downloader/dba"
 	"github.com/zanz1n/downloader/proxy/config"
 	"github.com/zanz1n/downloader/proxy/repository/auth"
@@ -18,7 +20,15 @@ import (
 	"github.com/zanz1n/downloader/shared/utils"
 )
 
+var envFile = flag.String("env-file", "", "The environment variables file")
+
 func init() {
+	flag.Parse()
+
+	if *envFile != "" {
+		godotenv.Load(*envFile)
+	}
+
 	config.MustFromEnv()
 }
 

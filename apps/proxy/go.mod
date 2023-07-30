@@ -9,6 +9,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v5 v5.4.2
+	github.com/joho/godotenv v1.5.1
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/valyala/fasthttp v1.48.0
 	github.com/zanz1n/downloader/shared v0.0.0-20230728223949-72ec6ca18da2
