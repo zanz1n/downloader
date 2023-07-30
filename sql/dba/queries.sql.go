@@ -7,6 +7,8 @@ package dba
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -46,8 +48,55 @@ func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User,
 	return &i, err
 }
 
+const getFileAndNodeInfo = `-- name: GetFileAndNodeInfo :one
+SELECT "files"."id",
+    "files"."name",
+    "files"."contentType",
+    "files"."checksum",
+    "files"."userId",
+    "nodes"."id" AS "nodeId",
+    "nodes"."address" AS "nodeAddress",
+    "nodes"."port" AS "nodePort",
+    "nodes"."ssl" AS "nodeSSL",
+    "nodes"."tcpPort" AS "nodeTCPPort"
+FROM "files"
+INNER JOIN "nodes" ON "files"."nodeId" = "nodes"."id"
+WHERE "files"."id" = $1
+`
+
+type GetFileAndNodeInfoRow struct {
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	ContentType string      `json:"contentType"`
+	Checksum    string      `json:"checksum"`
+	UserId      string      `json:"userId"`
+	NodeId      string      `json:"nodeId"`
+	NodeAddress string      `json:"nodeAddress"`
+	NodePort    int32       `json:"nodePort"`
+	NodeSSL     bool        `json:"nodeSSL"`
+	NodeTCPPort pgtype.Int4 `json:"nodeTCPPort"`
+}
+
+func (q *Queries) GetFileAndNodeInfo(ctx context.Context, id string) (*GetFileAndNodeInfoRow, error) {
+	row := q.db.QueryRow(ctx, getFileAndNodeInfo, id)
+	var i GetFileAndNodeInfoRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ContentType,
+		&i.Checksum,
+		&i.UserId,
+		&i.NodeId,
+		&i.NodeAddress,
+		&i.NodePort,
+		&i.NodeSSL,
+		&i.NodeTCPPort,
+	)
+	return &i, err
+}
+
 const getFileAuthInfo = `-- name: GetFileAuthInfo :one
-SELECT "id", "name", "checksum", "userId", "nodeId", "contentType" FROM "files" WHERE id = $1
+SELECT "id", "name", "checksum", "userId", "nodeId", "contentType" FROM "files" WHERE "id" = $1
 `
 
 type GetFileAuthInfoRow struct {
