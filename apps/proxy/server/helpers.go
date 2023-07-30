@@ -50,6 +50,7 @@ func respondJson(c *fasthttp.RequestCtx, v any) {
 
 	buf, err := json.Marshal(v)
 	if err != nil {
+		logger.Error("Failed to marshal request body: " + err.Error())
 		c.SetStatusCode(500)
 		c.SetBody([]byte("{\"message\":\"Failed to marshal response body\",\"errorCode\":5000}"))
 		return
@@ -81,7 +82,8 @@ func randomString(l int) (string, error) {
 	b := make([]byte, l)
 
 	if _, err := rand.Read(b); err != nil {
-		return "", err
+		logger.Error("Failed to read os random reader :" + err.Error())
+		return "", errors.ErrHashingFailed
 	}
 	bo := []byte{}
 

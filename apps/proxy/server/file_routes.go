@@ -29,7 +29,7 @@ func (s *Server) HandleGetFile(c *fasthttp.RequestCtx) {
 
 	info, err := s.db.GetFileAndNodeInfo(ctx, fileId)
 	if err != nil {
-		s.HandleError(c, err)
+		s.HandleError(c, errors.ErrFileNotFound)
 		return
 	}
 
