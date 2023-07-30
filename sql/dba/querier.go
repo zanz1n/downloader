@@ -13,9 +13,6 @@ type Querier interface {
 	GetFileAndNodeInfo(ctx context.Context, id string) (*GetFileAndNodeInfoRow, error)
 	GetFileAuthInfo(ctx context.Context, id string) (*GetFileAuthInfoRow, error)
 	GetJwtInfoByEmail(ctx context.Context, email string) (*GetJwtInfoByEmailRow, error)
-	GetNodeById(ctx context.Context, id string) (*Node, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
-	GetUserByID(ctx context.Context, id string) (*User, error)
 }
 
 var _ Querier = (*Queries)(nil)
