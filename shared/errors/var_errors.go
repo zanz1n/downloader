@@ -123,7 +123,7 @@ var (
 	statusSignupNotAllowed = &statusErrorImpl{
 		code:     4031,
 		httpCode: 403,
-		message:  "User signup is not allowed in this server, please contact an administrator for create an account",
+		message:  "User signup is not allowed in this server, please contact an administrator to create an account",
 	}
 	statusInvalidJson = &statusErrorImpl{
 		code:     4007,
