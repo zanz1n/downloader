@@ -8,6 +8,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"github.com/zanz1n/downloader/dba"
 	"github.com/zanz1n/downloader/proxy/repository/auth"
+	"github.com/zanz1n/downloader/proxy/repository/user"
 	"github.com/zanz1n/downloader/shared/errors"
 	"github.com/zanz1n/downloader/shared/logger"
 	"github.com/zanz1n/downloader/shared/utils"
@@ -20,9 +21,10 @@ type Server struct {
 	fhttp *fasthttp.Server
 	db    dba.Querier
 	as    *auth.AuthService
+	us    *user.UserService
 }
 
-func NewServer(db dba.Querier, as *auth.AuthService) *Server {
+func NewServer(db dba.Querier, as *auth.AuthService, us *user.UserService) *Server {
 	fhttp := fasthttp.Server{
 		StreamRequestBody: true,
 		CloseOnShutdown:   true,
@@ -33,6 +35,7 @@ func NewServer(db dba.Querier, as *auth.AuthService) *Server {
 		fhttp: &fhttp,
 		db:    db,
 		as:    as,
+		us:    us,
 	}
 	r.MethodNotAllowed = s.HandleMethodNotAllowed
 	r.NotFound = s.HandleNotFound

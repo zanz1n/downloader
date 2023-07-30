@@ -12,6 +12,7 @@ import (
 	"github.com/zanz1n/downloader/dba"
 	"github.com/zanz1n/downloader/proxy/config"
 	"github.com/zanz1n/downloader/proxy/repository/auth"
+	"github.com/zanz1n/downloader/proxy/repository/user"
 	"github.com/zanz1n/downloader/proxy/server"
 	"github.com/zanz1n/downloader/shared/logger"
 	"github.com/zanz1n/downloader/shared/utils"
@@ -50,7 +51,9 @@ func main() {
 		JwtEdDSAPubKey:    jwtPubkey,
 	})
 
-	srv := server.NewServer(db, authService)
+	userService := user.NewUserService(db)
+
+	srv := server.NewServer(db, authService, userService)
 
 	if cfg.EnableTLS {
 		go srv.MustListenAndServeTLS(
