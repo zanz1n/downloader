@@ -36,7 +36,7 @@ func (s *Server) HandleProxiedGetFile(c *fasthttp.RequestCtx) {
 
 	file, err := os.Open(cfg.App.DataDir + "/" + fileId)
 	if err != nil {
-		logger.Error("Registered file '%s' could not be found in the server storage")
+		logger.Error("Registered file '%s' could not be found in the server storage", fileId)
 		c.SetStatusCode(500)
 		return
 	}
@@ -44,7 +44,7 @@ func (s *Server) HandleProxiedGetFile(c *fasthttp.RequestCtx) {
 
 	fi, err := file.Stat()
 	if err != nil {
-		logger.Error("Failed to pick file '%s' FS info")
+		logger.Error("Failed to pick file '%s' FS info", fileId)
 		c.SetStatusCode(500)
 		return
 	}

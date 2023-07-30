@@ -65,14 +65,17 @@ func (s *Server) HandleGetFile(c *fasthttp.RequestCtx) {
 	res := fasthttp.AcquireResponse()
 	defer fasthttp.ReleaseResponse(res)
 
-	if err := fasthttp.Do(req, res); err != nil {
-		logger.Error("Failed to connect to '%s' node", info.NodeId)
+	if err := s.client.Do(req, res); err != nil {
+		logger.Error("Failed to connect to '%s' node: "+err.Error(), info.NodeId)
 		s.HandleError(c, errors.ErrFailedToFetchFileNode)
 		return
 	}
 
 	if res.StatusCode() != 200 {
-		logger.Error("Failed to to fetch file '%s' on node '%s'", info.ID, info.NodeId)
+		logger.Error("Failed to to fetch file '%s' on node '%s': StatusCode %v",
+			info.ID,
+			info.NodeId,
+			res.StatusCode())
 		s.HandleError(c, errors.ErrFailedToFetchFileNode)
 		return
 	}
