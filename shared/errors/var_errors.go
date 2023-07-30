@@ -24,6 +24,9 @@ var mpe = map[error]StatusError{
 	ErrRndQueryNotProvided:    statusRndQueryNotProvided,
 	ErrFailedToFetchFileNode:  statusInternalServerError,
 	ErrSignupNotAllowed:       statusSignupNotAllowed,
+	ErrInvalidJson:            statusInvalidJson,
+	ErrStreamNotSupported:     statusStreamNotSupported,
+	ErrInvalidSignInPayload:   statusInvalidSignInBody,
 }
 
 var (
@@ -122,6 +125,21 @@ var (
 		httpCode: 403,
 		message:  "User signup is not allowed in this server, please contact an administrator for create an account",
 	}
+	statusInvalidJson = &statusErrorImpl{
+		code:     4007,
+		httpCode: 400,
+		message:  "The provided json payload is not valid",
+	}
+	statusStreamNotSupported = &statusErrorImpl{
+		code:     4008,
+		httpCode: 400,
+		message:  "Content streaming is not supported in this route",
+	}
+	statusInvalidSignInBody = &statusErrorImpl{
+		code:     4009,
+		httpCode: 400,
+		message:  "The provided sign in body is not valid",
+	}
 )
 
 var (
@@ -148,4 +166,7 @@ var (
 	ErrRndQueryNotProvided    = New("the 'rnd' query parameter was not provided")
 	ErrFailedToFetchFileNode  = New("failed to fetch the node that the file is located")
 	ErrSignupNotAllowed       = New("user signup's are not allowed in this server")
+	ErrInvalidJson            = New("the provided json payload is not valid")
+	ErrStreamNotSupported     = New("content streaming is not supported")
+	ErrInvalidSignInPayload   = New("the provided sign in body is not valid")
 )
