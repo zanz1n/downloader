@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"strings"
 	"time"
 
@@ -162,9 +163,12 @@ func (s *Server) ExtractSignatureAuthorization(c *fasthttp.RequestCtx, p []byte)
 		return errors.ErrHashingFailed
 	}
 
-	buf := utils.B2S(hash.Sum([]byte{}))
+	buf := hash.Sum([]byte{})
+	base64Buf := []byte{}
 
-	if buf != authHeader.Token {
+	base64.StdEncoding.Encode(base64Buf, buf)
+
+	if string(base64Buf) != authHeader.Token {
 		return errors.ErrInvalidSignature
 	}
 	return nil
