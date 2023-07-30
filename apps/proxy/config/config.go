@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 	"strconv"
+
+	"github.com/zanz1n/downloader/shared/logger"
 )
 
 func GetConfig() *Config {
@@ -76,4 +78,10 @@ func FromEnv() error {
 	}
 
 	return nil
+}
+
+func MustFromEnv() {
+	if err := FromEnv(); err != nil {
+		logger.Fatal("Env " + err.Error())
+	}
 }
