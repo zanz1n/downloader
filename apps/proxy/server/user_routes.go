@@ -39,5 +39,5 @@ func (s *Server) HandleSignup(c *fasthttp.RequestCtx) {
 	}
 
 	c.SetStatusCode(201)
-	respondJson(c, user)
+	respondJson(c, dataBody(user.ToApiUser(), "Success"))
 }
