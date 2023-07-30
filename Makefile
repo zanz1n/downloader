@@ -11,4 +11,7 @@ run-proxy:
 	go run ./apps/proxy/main.go
 
 test:
+	go test ./apps/proxy/... --race
+	go test ./apps/node/... --race
+	go test ./sql/dba/... --race
 	go test ./shared/... --race
