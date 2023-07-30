@@ -16,10 +16,13 @@ import (
 
 func sanitizeFileName(name string, contentType string) string {
 	foundDot := false
-	for i := len(name); i != 0; i-- {
-		if name[i] == '.' {
-			foundDot = true
-			break
+	if len(name) > 2 {
+		for i := len(name)-1; i > 0; i-- {
+			logger.Debug("%v", i)
+			if name[i] == '.' {
+				foundDot = true
+				break
+			}
 		}
 	}
 
