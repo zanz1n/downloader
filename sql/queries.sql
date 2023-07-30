@@ -21,3 +21,6 @@ SELECT "id", "name", "checksum", "userId", "nodeId", "contentType" FROM "files" 
 
 -- name: CreateUser :one
 INSERT INTO "users" ("id", "firstName", "lastName", "email", "password", "role") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+
+-- name: CreateFile :one
+INSERT INTO "files" ("id", "name", "contentType", "size", "checksum", "nodeId", "userId") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;

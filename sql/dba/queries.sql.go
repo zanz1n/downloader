@@ -11,6 +11,45 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createFile = `-- name: CreateFile :one
+INSERT INTO "files" ("id", "name", "contentType", "size", "checksum", "nodeId", "userId") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, "createdAt", "updatedAt", name, "contentType", size, checksum, "nodeId", "userId"
+`
+
+type CreateFileParams struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	ContentType string `json:"contentType"`
+	Size        int32  `json:"size"`
+	Checksum    string `json:"checksum"`
+	NodeId      string `json:"nodeId"`
+	UserId      string `json:"userId"`
+}
+
+func (q *Queries) CreateFile(ctx context.Context, arg *CreateFileParams) (*File, error) {
+	row := q.db.QueryRow(ctx, createFile,
+		arg.ID,
+		arg.Name,
+		arg.ContentType,
+		arg.Size,
+		arg.Checksum,
+		arg.NodeId,
+		arg.UserId,
+	)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.ContentType,
+		&i.Size,
+		&i.Checksum,
+		&i.NodeId,
+		&i.UserId,
+	)
+	return &i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO "users" ("id", "firstName", "lastName", "email", "password", "role") VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, "createdAt", "updatedAt", "firstName", "lastName", email, password, deleted, role
 `
