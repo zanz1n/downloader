@@ -59,7 +59,7 @@ type File struct {
 	UpdatedAt   pgtype.Timestamp `json:"updatedAt"`
 	Name        string           `json:"name"`
 	ContentType string           `json:"contentType"`
-	Size        int32            `json:"size"`
+	Size        int64            `json:"size"`
 	Checksum    string           `json:"checksum"`
 	NodeId      string           `json:"nodeId"`
 	UserId      string           `json:"userId"`
@@ -76,7 +76,7 @@ type Node struct {
 	Tcp         bool             `json:"tcp"`
 	TcpPort     pgtype.Int4      `json:"tcpPort"`
 	Ssl         bool             `json:"ssl"`
-	Capacity    int32            `json:"capacity"`
+	Capacity    int64            `json:"capacity"`
 }
 
 type User struct {

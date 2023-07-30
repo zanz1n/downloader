@@ -4,7 +4,7 @@ CREATE TABLE "files" (
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "name" VARCHAR(128) NOT NULL,
     "contentType" VARCHAR(64) NOT NULL,
-    "size" INTEGER NOT NULL,
+    "size" BIGINT NOT NULL,
     "checksum" VARCHAR(64) NOT NULL,
     "nodeId" VARCHAR(36) NOT NULL,
     "userId" VARCHAR(12) NOT NULL,

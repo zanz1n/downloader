@@ -9,7 +9,7 @@ CREATE TABLE "nodes" (
     "tcp" BOOLEAN NOT NULL,
     "tcpPort" INTEGER,
     "ssl" BOOLEAN NOT NULL,
-    "capacity" INTEGER NOT NULL,
+    "capacity" BIGINT NOT NULL,
 
     CONSTRAINT "nodes_pkey" PRIMARY KEY ("id")
 );

@@ -19,7 +19,7 @@ type CreateFileParams struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	ContentType string `json:"contentType"`
-	Size        int32  `json:"size"`
+	Size        int64  `json:"size"`
 	Checksum    string `json:"checksum"`
 	NodeId      string `json:"nodeId"`
 	UserId      string `json:"userId"`
