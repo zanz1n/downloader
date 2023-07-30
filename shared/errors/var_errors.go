@@ -22,6 +22,7 @@ var mpe = map[error]StatusError{
 	ErrHashingFailed:          statusInternalServerError,
 	ErrInvalidSignature:       statusInvalidSignature,
 	ErrRndQueryNotProvided:    statusRndQueryNotProvided,
+	ErrFailedToFetchFileNode:  statusInternalServerError,
 }
 
 var (
@@ -139,4 +140,5 @@ var (
 	ErrHashingFailed          = New("hashing proccess failed")
 	ErrInvalidSignature       = New("the signature hash is not valid")
 	ErrRndQueryNotProvided    = New("the 'rnd' query parameter was not provided")
+	ErrFailedToFetchFileNode  = New("failed to fetch the node that the file is located")
 )
