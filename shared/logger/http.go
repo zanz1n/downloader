@@ -30,7 +30,7 @@ var httpLogger Logger
 func LogRequest(info *RequestInfo) {
 	if DefaultConfig.Colors {
 		httpLogger.Info(
-			"%s  %s  %s  %s  "+fgGray+"%v"+reset,
+			"%s %s %s %s "+fgGray+"%v"+reset,
 			info.Addr.String(),
 			methodColor(info.Method),
 			info.Path,
@@ -40,8 +40,8 @@ func LogRequest(info *RequestInfo) {
 		return
 	}
 
-	httpLogger.Info(info.Addr.String() + "  " + info.Method + "  " + info.Path +
-		"  " + strconv.Itoa(info.StatusCode) + info.Duration.String(),
+	httpLogger.Info(info.Addr.String() + " " + info.Method + " " + info.Path +
+		" " + strconv.Itoa(info.StatusCode) + info.Duration.String(),
 	)
 }
 
