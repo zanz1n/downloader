@@ -91,7 +91,7 @@ func (s *Server) HandleGetFile(c *fasthttp.RequestCtx) {
 	)
 
 	if res.IsBodyStream() {
-		c.Response.SetBodyStream(res.BodyStream(), res.Header.ContentLength())
+		c.Response.SetBodyStream(res.BodyStream(), -1)
 	} else {
 		b := res.Body()
 		c.Response.SetBodyStream(bytes.NewReader(b), len(b))
