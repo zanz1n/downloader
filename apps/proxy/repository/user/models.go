@@ -2,6 +2,23 @@ package user
 
 import "github.com/zanz1n/downloader/shared/errors"
 
+type SignInBody struct {
+	Email    string `json:"email,omitempty" validate:"required"`
+	Password string `json:"password,omitempty" validate:"required"`
+}
+
+func (p *SignInBody) Validate() error {
+	if err := validate.Struct(p); err != nil {
+		return errors.ErrInvalidSignInPayload
+	}
+
+	if !mailRegex.MatchString(p.Email) {
+		return errors.ErrInvalidEmailProvided
+	}
+
+	return nil
+}
+
 type SignUpBody struct {
 	FirstName string `json:"firstName,omitempty" validate:"required"`
 	LastName  string `json:"lastName,omitempty" validate:"required"`
