@@ -6,8 +6,6 @@ import (
 
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
-	"github.com/zanz1n/downloader/dba"
-	"github.com/zanz1n/downloader/shared/auth"
 	"github.com/zanz1n/downloader/shared/errors"
 	"github.com/zanz1n/downloader/shared/logger"
 	"github.com/zanz1n/downloader/shared/utils"
@@ -18,11 +16,9 @@ var serverLogger = logger.NewLogger("server")
 type Server struct {
 	r     *router.Router
 	fhttp *fasthttp.Server
-	db    dba.Querier
-	as    *auth.AuthService
 }
 
-func NewServer(db dba.Querier, as *auth.AuthService) *Server {
+func NewServer() *Server {
 	fhttp := fasthttp.Server{
 		StreamRequestBody: true,
 		CloseOnShutdown:   true,
@@ -31,8 +27,6 @@ func NewServer(db dba.Querier, as *auth.AuthService) *Server {
 
 	s := Server{
 		fhttp: &fhttp,
-		db:    db,
-		as:    as,
 	}
 	r.MethodNotAllowed = s.HandleMethodNotAllowed
 	r.NotFound = s.HandleNotFound
@@ -44,8 +38,7 @@ func NewServer(db dba.Querier, as *auth.AuthService) *Server {
 func (s *Server) wireRoutes() {
 	s.fhttp.Handler = s.Handler
 
-	s.r.GET("/file/{id}", s.HandleGetFile)
-	s.r.GET("/file/{id}/proxy", s.HandleProxiedGetFile)
+	s.r.GET("/file/{id}", s.HandleProxiedGetFile)
 }
 
 func (s *Server) Handler(ctx *fasthttp.RequestCtx) {
