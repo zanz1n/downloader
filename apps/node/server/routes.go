@@ -12,7 +12,7 @@ import (
 func (s *Server) HandleProxiedGetFile(c *fasthttp.RequestCtx) {
 	fileId, ok := c.UserValue("id").(string)
 	if !ok {
-		c.SetStatusCode(400)
+		c.SetStatusCode(500)
 		return
 	}
 
