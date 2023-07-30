@@ -46,6 +46,10 @@ func NewServer(db dba.Querier, as *auth.AuthService, us *user.UserService) *Serv
 
 func (s *Server) wireRoutes() {
 	s.fhttp.Handler = s.Handler
+
+	s.r.GET("/files/{id}", s.HandleGetFile)
+	s.r.POST("/auth/signin", s.HandleSignin)
+	s.r.POST("/auth/signup", s.HandleSignup)
 }
 
 func (s *Server) Handler(ctx *fasthttp.RequestCtx) {
