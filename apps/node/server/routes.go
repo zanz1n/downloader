@@ -40,13 +40,19 @@ func (s *Server) HandleProxiedGetFile(c *fasthttp.RequestCtx) {
 		c.SetStatusCode(500)
 		return
 	}
-	defer file.Close()
 
 	fi, err := file.Stat()
 	if err != nil {
+		file.Close()
 		logger.Error("Failed to pick file '%s' FS info", fileId)
 		c.SetStatusCode(500)
 		return
+	}
+
+	filesize := int(fi.Size())
+
+	if int64(filesize) != fi.Size() {
+		filesize = -1
 	}
 
 	c.Response.SetBodyStream(file, int(fi.Size()))
