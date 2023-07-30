@@ -14,4 +14,4 @@ CREATE TABLE "users" (
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "user_email_idx" ON "users"("email");
+CREATE UNIQUE INDEX "user_email_idx" ON "users"("email");
