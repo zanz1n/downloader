@@ -104,7 +104,7 @@ func (s *Server) HandleNotFound(c *fasthttp.RequestCtx) {
 
 func (s *Server) MustListenAndServeTLS(addr, certPath, keyPath string) {
 	if err := s.ListenAndServeTLS(addr, certPath, keyPath); err != nil {
-		logger.Fatal(err)
+		serverLogger.Fatal(err)
 	}
 }
 
@@ -129,7 +129,7 @@ func (s *Server) ListenAndServeTLS(addr, certPath, keyPath string) error {
 
 func (s *Server) MustListenAndServe(addr string) {
 	if err := s.ListenAndServe(addr); err != nil {
-		logger.Fatal(err)
+		serverLogger.Fatal(err)
 	}
 }
 
