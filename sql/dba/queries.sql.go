@@ -50,6 +50,51 @@ func (q *Queries) CreateFile(ctx context.Context, arg *CreateFileParams) (*File,
 	return &i, err
 }
 
+const createNode = `-- name: CreateNode :one
+INSERT INTO "nodes" ("id", "name", "description", "address", "port", "tcp", "tcpPort", "ssl", "capacity") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, "createdAt", "updatedAt", name, description, address, port, tcp, "tcpPort", ssl, capacity
+`
+
+type CreateNodeParams struct {
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Address     string      `json:"address"`
+	Port        int32       `json:"port"`
+	Tcp         bool        `json:"tcp"`
+	TcpPort     pgtype.Int4 `json:"tcpPort"`
+	Ssl         bool        `json:"ssl"`
+	Capacity    int64       `json:"capacity"`
+}
+
+func (q *Queries) CreateNode(ctx context.Context, arg *CreateNodeParams) (*Node, error) {
+	row := q.db.QueryRow(ctx, createNode,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.Address,
+		arg.Port,
+		arg.Tcp,
+		arg.TcpPort,
+		arg.Ssl,
+		arg.Capacity,
+	)
+	var i Node
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Description,
+		&i.Address,
+		&i.Port,
+		&i.Tcp,
+		&i.TcpPort,
+		&i.Ssl,
+		&i.Capacity,
+	)
+	return &i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO "users" ("id", "firstName", "lastName", "email", "password", "role") VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, "createdAt", "updatedAt", "firstName", "lastName", email, password, deleted, role
 `

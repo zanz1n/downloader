@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	CreateFile(ctx context.Context, arg *CreateFileParams) (*File, error)
+	CreateNode(ctx context.Context, arg *CreateNodeParams) (*Node, error)
 	CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error)
 	GetFileAndNodeInfo(ctx context.Context, id string) (*GetFileAndNodeInfoRow, error)
 	GetFileAuthInfo(ctx context.Context, id string) (*GetFileAuthInfoRow, error)
