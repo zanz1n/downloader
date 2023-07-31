@@ -9,6 +9,7 @@ import (
 
 	"github.com/zanz1n/downloader/node/config"
 	"github.com/zanz1n/downloader/node/server"
+	"github.com/zanz1n/downloader/node/tcp"
 	"github.com/zanz1n/downloader/shared/logger"
 )
 
@@ -34,6 +35,7 @@ func main() {
 	cfg := config.GetConfig()
 
 	srv := server.NewServer()
+	tsrv := tcp.NewServer()
 
 	if cfg.App.SSL.Enabled {
 		go srv.MustListenAndServeTLS(
@@ -41,8 +43,20 @@ func main() {
 			cfg.App.SSL.CertificateFile,
 			cfg.App.SSL.KeyFile,
 		)
+
+		if cfg.App.TCP.Enabled {
+			go tsrv.MustListenAndServeTLS(
+				fmt.Sprintf(":%v", cfg.App.TCP.Port),
+				cfg.App.SSL.CertificateFile,
+				cfg.App.SSL.KeyFile,
+			)
+		}
 	} else {
 		go srv.MustListenAndServe(fmt.Sprintf(":%v", cfg.App.Port))
+
+		if cfg.App.TCP.Enabled {
+			go tsrv.MustListenAndServe(fmt.Sprintf(":%v", cfg.App.TCP.Port))
+		}
 	}
 
 	<-endCh
