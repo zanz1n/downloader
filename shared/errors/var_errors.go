@@ -27,6 +27,7 @@ var mpe = map[error]StatusError{
 	ErrInvalidJson:            statusInvalidJson,
 	ErrStreamNotSupported:     statusStreamNotSupported,
 	ErrInvalidSignInPayload:   statusInvalidSignInBody,
+	ErrInvalidIdenPayload:     statusInvalidIdenPayload,
 }
 
 var (
@@ -140,6 +141,11 @@ var (
 		httpCode: 400,
 		message:  "The provided sign in body is not valid",
 	}
+	statusInvalidIdenPayload = &statusErrorImpl{
+		code:     40010,
+		httpCode: 400,
+		message:  "The provided iden payload is not valid",
+	}
 )
 
 var (
@@ -169,4 +175,5 @@ var (
 	ErrInvalidJson            = New("the provided json payload is not valid")
 	ErrStreamNotSupported     = New("content streaming is not supported")
 	ErrInvalidSignInPayload   = New("the provided sign in body is not valid")
+	ErrInvalidIdenPayload     = New("the provided iden payload is not valid")
 )
