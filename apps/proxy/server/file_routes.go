@@ -113,12 +113,7 @@ func (s *Server) handleGetFileTCP(c *fasthttp.RequestCtx, info *dba.GetFileAndNo
 		return nil, errors.ErrFailedToFetchFileNode
 	}
 
-	b, err := io.ReadAll(conn)
-	if err != nil {
-		return nil, err
-	}
-
-	return bytes.NewReader(b), nil
+	return conn, nil
 }
 
 func (s *Server) handleGetFileHttp(c *fasthttp.RequestCtx, info *dba.GetFileAndNodeInfoRow) (io.Reader, error) {
