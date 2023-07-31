@@ -6,7 +6,6 @@ CREATE TABLE "nodes" (
     "description" TEXT NOT NULL,
     "address" VARCHAR(128) NOT NULL,
     "port" INTEGER NOT NULL,
-    "tcp" BOOLEAN NOT NULL,
     "tcpPort" INTEGER,
     "ssl" BOOLEAN NOT NULL,
     "capacity" BIGINT NOT NULL,

@@ -26,4 +26,4 @@ INSERT INTO "users" ("id", "firstName", "lastName", "email", "password", "role")
 INSERT INTO "files" ("id", "name", "contentType", "size", "checksum", "nodeId", "userId") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 -- name: CreateNode :one
-INSERT INTO "nodes" ("id", "name", "description", "address", "port", "tcp", "tcpPort", "ssl", "capacity") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
+INSERT INTO "nodes" ("id", "name", "description", "address", "port", "tcpPort", "ssl", "capacity") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;

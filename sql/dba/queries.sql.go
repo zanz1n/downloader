@@ -51,7 +51,7 @@ func (q *Queries) CreateFile(ctx context.Context, arg *CreateFileParams) (*File,
 }
 
 const createNode = `-- name: CreateNode :one
-INSERT INTO "nodes" ("id", "name", "description", "address", "port", "tcp", "tcpPort", "ssl", "capacity") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, "createdAt", "updatedAt", name, description, address, port, tcp, "tcpPort", ssl, capacity
+INSERT INTO "nodes" ("id", "name", "description", "address", "port", "tcpPort", "ssl", "capacity") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, "createdAt", "updatedAt", name, description, address, port, "tcpPort", ssl, capacity
 `
 
 type CreateNodeParams struct {
@@ -60,7 +60,6 @@ type CreateNodeParams struct {
 	Description string      `json:"description"`
 	Address     string      `json:"address"`
 	Port        int32       `json:"port"`
-	Tcp         bool        `json:"tcp"`
 	TcpPort     pgtype.Int4 `json:"tcpPort"`
 	Ssl         bool        `json:"ssl"`
 	Capacity    int64       `json:"capacity"`
@@ -73,7 +72,6 @@ func (q *Queries) CreateNode(ctx context.Context, arg *CreateNodeParams) (*Node,
 		arg.Description,
 		arg.Address,
 		arg.Port,
-		arg.Tcp,
 		arg.TcpPort,
 		arg.Ssl,
 		arg.Capacity,
@@ -87,7 +85,6 @@ func (q *Queries) CreateNode(ctx context.Context, arg *CreateNodeParams) (*Node,
 		&i.Description,
 		&i.Address,
 		&i.Port,
-		&i.Tcp,
 		&i.TcpPort,
 		&i.Ssl,
 		&i.Capacity,

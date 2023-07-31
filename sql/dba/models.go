@@ -73,7 +73,6 @@ type Node struct {
 	Description string           `json:"description"`
 	Address     string           `json:"address"`
 	Port        int32            `json:"port"`
-	Tcp         bool             `json:"tcp"`
 	TcpPort     pgtype.Int4      `json:"tcpPort"`
 	Ssl         bool             `json:"ssl"`
 	Capacity    int64            `json:"capacity"`
