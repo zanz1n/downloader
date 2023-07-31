@@ -48,7 +48,7 @@ func (s *Server) ExtractSignatureAuthorization(c *fasthttp.RequestCtx, p []byte)
 		logger.Error("Hashing failed: " + err.Error())
 		return errors.ErrHashingFailed
 	}
-	if _, err := hash.Write(utils.S2B(config.GetConfig().Key)); err != nil {
+	if _, err := hash.Write(utils.S2B(config.GetConfig().GetKey())); err != nil {
 		logger.Error("Hashing failed: " + err.Error())
 		return errors.ErrHashingFailed
 	}
