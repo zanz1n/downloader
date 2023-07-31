@@ -63,7 +63,9 @@ func (s *Server) Handle(conn net.Conn) {
 
 	switch iden.Type {
 	case transport.RequestTypeRead:
+		s.HandleRead(conn, &iden)
 	case transport.RequestTypeWrite:
+		s.HandleWrite(conn, &iden)
 	default:
 		serverLogger.Info("Conn %s send an invalid iden payload",
 			conn.RemoteAddr().String())
