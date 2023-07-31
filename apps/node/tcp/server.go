@@ -41,13 +41,15 @@ func (s *Server) Handle(conn net.Conn) {
 	buf := make([]byte, 1024)
 
 	if _, err = conn.Read(buf); err != nil {
-		serverLogger.Info("Conn %s closed too soon", conn.RemoteAddr().String())
+		serverLogger.Info("Conn %s closed too soon",
+			conn.RemoteAddr().String())
 		return
 	}
 
 	iden := transport.IdenPayload{}
 	if err = transport.DecodeIdenPayload(buf, &iden); err != nil {
-		serverLogger.Info("Conn %s send a poorly encoded iden payload: "+err.Error(), conn.RemoteAddr().String())
+		serverLogger.Info("Conn %s send a poorly encoded iden payload: "+
+			err.Error(), conn.RemoteAddr().String())
 		return
 	}
 	if err = validate.Struct(&iden); err != nil {
@@ -58,7 +60,8 @@ func (s *Server) Handle(conn net.Conn) {
 	case transport.RequestTypeRead:
 	case transport.RequestTypeWrite:
 	default:
-		serverLogger.Info("Conn %s send an invalid iden payload", conn.RemoteAddr().String())
+		serverLogger.Info("Conn %s send an invalid iden payload",
+			conn.RemoteAddr().String())
 		return
 	}
 
