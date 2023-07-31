@@ -56,6 +56,11 @@ func (s *Server) Handle(conn net.Conn) {
 		serverLogger.Info("Conn %s send an invalid iden payload: " + err.Error())
 	}
 
+	if err = validateIden(&iden); err != nil {
+		serverLogger.Info("Conn %s send an invalid signature", conn.RemoteAddr().String())
+		return
+	}
+
 	switch iden.Type {
 	case transport.RequestTypeRead:
 	case transport.RequestTypeWrite:
