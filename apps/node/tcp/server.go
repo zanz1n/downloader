@@ -41,7 +41,7 @@ func (s *Server) Handle(conn net.Conn) {
 	buf := make([]byte, 1024)
 
 	if _, err = conn.Read(buf); err != nil {
-		serverLogger.Info("Conn %s closed too soon",
+		serverLogger.Info("Conn %s closed too soon: "+err.Error(),
 			conn.RemoteAddr().String())
 		return
 	}
