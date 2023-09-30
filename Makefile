@@ -1,17 +1,14 @@
 build-node:
-	go build -ldflags "-s -w" -o dist/node.bin github.com/zanz1n/downloader/node
+	go build -ldflags "-s -w" -o bin/node github.com/zanz1n/downloader/cmd/node
 
 build-proxy:
-	go build -ldflags "-s -w" -o dist/proxy.bin github.com/zanz1n/downloader/proxy
+	go build -ldflags "-s -w" -o bin/proxy github.com/zanz1n/downloader/cmd/proxy
 
 run-node:
-	go run github.com/zanz1n/downloader/node --config ./data/config.yml
+	go run github.com/zanz1n/downloader/cmd/node --config ./data/config.yml
 
 run-proxy:
-	go run github.com/zanz1n/downloader/proxy --env-file .env
+	go run github.com/zanz1n/downloader/cmd/proxy --env-file .env
 
 test:
-	go test ./apps/proxy/... --race
-	go test ./apps/node/... --race
-	go test ./sql/dba/... --race
-	go test ./shared/... --race
+	go test ./... -v --race
