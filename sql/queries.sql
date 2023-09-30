@@ -1,8 +1,18 @@
 -- name: GetJwtInfoByEmail :one
-SELECT "id", "email", "password", "role", "deleted" FROM "users" WHERE "email" = $1;
+
+SELECT
+    "id",
+    "email",
+    "password",
+    "role",
+    "deleted"
+FROM "users"
+WHERE "email" = $1;
 
 -- name: GetFileAndNodeInfo :one
-SELECT "files"."id",
+
+SELECT
+    "files"."id",
     "files"."name",
     "files"."contentType",
     "files"."checksum",
@@ -13,17 +23,59 @@ SELECT "files"."id",
     "nodes"."ssl" AS "nodeSSL",
     "nodes"."tcpPort" AS "nodeTCPPort"
 FROM "files"
-INNER JOIN "nodes" ON "files"."nodeId" = "nodes"."id"
+    INNER JOIN "nodes" ON "files"."nodeId" = "nodes"."id"
 WHERE "files"."id" = $1;
 
 -- name: GetFileAuthInfo :one
-SELECT "id", "name", "checksum", "userId", "nodeId", "contentType" FROM "files" WHERE "id" = $1;
+
+SELECT
+    "id",
+    "name",
+    "checksum",
+    "userId",
+    "nodeId",
+    "contentType"
+FROM "files"
+WHERE "id" = $1;
 
 -- name: CreateUser :one
-INSERT INTO "users" ("id", "firstName", "lastName", "email", "password", "role") VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+
+INSERT INTO
+    "users" (
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "password",
+        "role"
+    )
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
 
 -- name: CreateFile :one
-INSERT INTO "files" ("id", "name", "contentType", "size", "checksum", "nodeId", "userId") VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
+
+INSERT INTO
+    "files" (
+        "id",
+        "name",
+        "contentType",
+        "size",
+        "checksum",
+        "nodeId",
+        "userId"
+    )
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
 
 -- name: CreateNode :one
-INSERT INTO "nodes" ("id", "name", "description", "address", "port", "tcpPort", "ssl", "capacity") VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
+
+INSERT INTO
+    "nodes" (
+        "id",
+        "name",
+        "description",
+        "address",
+        "port",
+        "tcpPort",
+        "ssl",
+        "capacity"
+    )
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
