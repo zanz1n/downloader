@@ -13,4 +13,4 @@ sql:
         emit_params_struct_pointers: true
         emit_empty_slices: true
         package: "dba"
-        out: "sql/dba"
+        out: "internal/dba"
