@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/zanz1n/downloader/cmd/proxy/repository/auth"
 	"github.com/zanz1n/downloader/internal/dba"
 	"github.com/zanz1n/downloader/internal/errors"
@@ -28,18 +27,13 @@ func (s *UserService) CreateUser(role dba.UserRole, data *SignUpBody) (*dba.User
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	id, err := nanoid.New(12)
-	if err != nil {
-		return nil, errors.ErrNanoIdGenerationFailed
-	}
-
 	password, err := auth.HashPassword(data.Password)
 	if err != nil {
 		return nil, err
 	}
 
 	params := dba.CreateUserParams{
-		ID:        id,
+		ID:        dba.NewUUID(),
 		FirstName: data.FirstName,
 		LastName:  data.LastName,
 		Email:     data.Email,

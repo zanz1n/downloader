@@ -2,7 +2,7 @@ CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'USER');
 
 CREATE TABLE
     "users" (
-        "id" VARCHAR(12) NOT NULL,
+        "id" UUID NOT NULL,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "firstName" VARCHAR(16) NOT NULL,

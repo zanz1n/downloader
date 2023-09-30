@@ -27,13 +27,13 @@ VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, "createdAt", "updatedAt", name
 `
 
 type CreateFileParams struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	ContentType string `json:"contentType"`
-	Size        int64  `json:"size"`
-	Checksum    string `json:"checksum"`
-	NodeId      string `json:"nodeId"`
-	UserId      string `json:"userId"`
+	ID          pgtype.UUID `json:"id"`
+	Name        string      `json:"name"`
+	ContentType string      `json:"contentType"`
+	Size        int64       `json:"size"`
+	Checksum    string      `json:"checksum"`
+	NodeId      pgtype.UUID `json:"nodeId"`
+	UserId      pgtype.UUID `json:"userId"`
 }
 
 func (q *Queries) CreateFile(ctx context.Context, arg *CreateFileParams) (*File, error) {
@@ -78,7 +78,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, "createdAt", "updatedAt", 
 `
 
 type CreateNodeParams struct {
-	ID          string      `json:"id"`
+	ID          pgtype.UUID `json:"id"`
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
 	Address     string      `json:"address"`
@@ -130,12 +130,12 @@ VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, "createdAt", "updatedAt", "firstNa
 `
 
 type CreateUserParams struct {
-	ID        string   `json:"id"`
-	FirstName string   `json:"firstName"`
-	LastName  string   `json:"lastName"`
-	Email     string   `json:"email"`
-	Password  string   `json:"password"`
-	Role      UserRole `json:"role"`
+	ID        pgtype.UUID `json:"id"`
+	FirstName string      `json:"firstName"`
+	LastName  string      `json:"lastName"`
+	Email     string      `json:"email"`
+	Password  string      `json:"password"`
+	Role      UserRole    `json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg *CreateUserParams) (*User, error) {
@@ -181,19 +181,19 @@ WHERE "files"."id" = $1
 `
 
 type GetFileAndNodeInfoRow struct {
-	ID          string      `json:"id"`
+	ID          pgtype.UUID `json:"id"`
 	Name        string      `json:"name"`
 	ContentType string      `json:"contentType"`
 	Checksum    string      `json:"checksum"`
-	UserId      string      `json:"userId"`
-	NodeId      string      `json:"nodeId"`
+	UserId      pgtype.UUID `json:"userId"`
+	NodeId      pgtype.UUID `json:"nodeId"`
 	NodeAddress string      `json:"nodeAddress"`
 	NodePort    int32       `json:"nodePort"`
 	NodeSSL     bool        `json:"nodeSSL"`
 	NodeTCPPort pgtype.Int4 `json:"nodeTCPPort"`
 }
 
-func (q *Queries) GetFileAndNodeInfo(ctx context.Context, id string) (*GetFileAndNodeInfoRow, error) {
+func (q *Queries) GetFileAndNodeInfo(ctx context.Context, id pgtype.UUID) (*GetFileAndNodeInfoRow, error) {
 	row := q.db.QueryRow(ctx, getFileAndNodeInfo, id)
 	var i GetFileAndNodeInfoRow
 	err := row.Scan(
@@ -225,15 +225,15 @@ WHERE "id" = $1
 `
 
 type GetFileAuthInfoRow struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Checksum    string `json:"checksum"`
-	UserId      string `json:"userId"`
-	NodeId      string `json:"nodeId"`
-	ContentType string `json:"contentType"`
+	ID          pgtype.UUID `json:"id"`
+	Name        string      `json:"name"`
+	Checksum    string      `json:"checksum"`
+	UserId      pgtype.UUID `json:"userId"`
+	NodeId      pgtype.UUID `json:"nodeId"`
+	ContentType string      `json:"contentType"`
 }
 
-func (q *Queries) GetFileAuthInfo(ctx context.Context, id string) (*GetFileAuthInfoRow, error) {
+func (q *Queries) GetFileAuthInfo(ctx context.Context, id pgtype.UUID) (*GetFileAuthInfoRow, error) {
 	row := q.db.QueryRow(ctx, getFileAuthInfo, id)
 	var i GetFileAuthInfoRow
 	err := row.Scan(
@@ -260,11 +260,11 @@ WHERE "email" = $1
 `
 
 type GetJwtInfoByEmailRow struct {
-	ID       string   `json:"id"`
-	Email    string   `json:"email"`
-	Password string   `json:"password"`
-	Role     UserRole `json:"role"`
-	Deleted  bool     `json:"deleted"`
+	ID       pgtype.UUID `json:"id"`
+	Email    string      `json:"email"`
+	Password string      `json:"password"`
+	Role     UserRole    `json:"role"`
+	Deleted  bool        `json:"deleted"`
 }
 
 func (q *Queries) GetJwtInfoByEmail(ctx context.Context, email string) (*GetJwtInfoByEmailRow, error) {

@@ -1,6 +1,6 @@
 CREATE TABLE
     "nodes" (
-        "id" VARCHAR(36) NOT NULL,
+        "id" UUID NOT NULL,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "name" VARCHAR(64) NOT NULL,

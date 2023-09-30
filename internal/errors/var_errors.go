@@ -1,33 +1,34 @@
 package errors
 
 var mpe = map[error]StatusError{
-	ErrPasswordHashingFailed:  statusInternalServerError,
-	ErrUserAuthFailed:         statusUserAuthFailed,
-	ErrTokenGenerationFailed:  statusInternalServerError,
-	ErrRouteRequiresAuth:      statusRouteRequiresAuth,
-	ErrExpiredJwtToken:        statusExpiredJwtToken,
-	ErrInvalidJwtToken:        statusInvalidJwtToken,
-	ErrDecodeTokenUnknownErr:  statusInternalServerError,
-	ErrInvalidAuthHeader:      statusInvalidAuthHeader,
-	ErrFileAccessDenied:       statusFileAccessDenied,
-	ErrFileNotFound:           statusFileNotFound,
-	ErrFileNotLocatedInNode:   statusFileNotLocatedInNode,
-	ErrInvalidEmailProvided:   statusInvalidEmailProvided,
-	ErrInvalidSignUpPayload:   statusInvalidSignUpBody,
-	ErrUserAlreadyExists:      statusUserAlreadyExists,
-	ErrEmailTooLarge:          statusEmailTooLarge,
-	ErrPasswordWeak:           statusPasswordWeak,
-	ErrUsernameTooLarge:       statusUsernameTooLarge,
-	ErrNanoIdGenerationFailed: statusInternalServerError,
-	ErrHashingFailed:          statusInternalServerError,
-	ErrInvalidSignature:       statusInvalidSignature,
-	ErrRndQueryNotProvided:    statusRndQueryNotProvided,
-	ErrFailedToFetchFileNode:  statusInternalServerError,
-	ErrSignupNotAllowed:       statusSignupNotAllowed,
-	ErrInvalidJson:            statusInvalidJson,
-	ErrStreamNotSupported:     statusStreamNotSupported,
-	ErrInvalidSignInPayload:   statusInvalidSignInBody,
-	ErrInvalidIdenPayload:     statusInvalidIdenPayload,
+	ErrPasswordHashingFailed: statusInternalServerError,
+	ErrUserAuthFailed:        statusUserAuthFailed,
+	ErrTokenGenerationFailed: statusInternalServerError,
+	ErrRouteRequiresAuth:     statusRouteRequiresAuth,
+	ErrExpiredJwtToken:       statusExpiredJwtToken,
+	ErrInvalidJwtToken:       statusInvalidJwtToken,
+	ErrDecodeTokenUnknownErr: statusInternalServerError,
+	ErrInvalidAuthHeader:     statusInvalidAuthHeader,
+	ErrFileAccessDenied:      statusFileAccessDenied,
+	ErrFileNotFound:          statusFileNotFound,
+	ErrFileNotLocatedInNode:  statusFileNotLocatedInNode,
+	ErrInvalidEmailProvided:  statusInvalidEmailProvided,
+	ErrInvalidSignUpPayload:  statusInvalidSignUpBody,
+	ErrUserAlreadyExists:     statusUserAlreadyExists,
+	ErrEmailTooLarge:         statusEmailTooLarge,
+	ErrPasswordWeak:          statusPasswordWeak,
+	ErrUsernameTooLarge:      statusUsernameTooLarge,
+	ErrUUIDGenerationFailed:  statusInternalServerError,
+	ErrHashingFailed:         statusInternalServerError,
+	ErrInvalidSignature:      statusInvalidSignature,
+	ErrRndQueryNotProvided:   statusRndQueryNotProvided,
+	ErrFailedToFetchFileNode: statusInternalServerError,
+	ErrSignupNotAllowed:      statusSignupNotAllowed,
+	ErrInvalidJson:           statusInvalidJson,
+	ErrStreamNotSupported:    statusStreamNotSupported,
+	ErrInvalidSignInPayload:  statusInvalidSignInBody,
+	ErrInvalidIdenPayload:    statusInvalidIdenPayload,
+	ErrInvalidUUID:           statusInvalidUUID,
 }
 
 var (
@@ -146,34 +147,40 @@ var (
 		httpCode: 400,
 		message:  "The provided iden payload is not valid",
 	}
+	statusInvalidUUID = &statusErrorImpl{
+		code:     40011,
+		httpCode: 400,
+		message:  "The provided uuid is not valid",
+	}
 )
 
 var (
-	ErrRouteRequiresAuth      = New("this route requires authorization")
-	ErrTokenGenerationFailed  = New("failed to generate the jwt token")
-	ErrPasswordHashingFailed  = New("failed to hash user password")
-	ErrUserAuthFailed         = New("user not found or password do not match")
-	ErrInvalidJwtToken        = New("the provided authorization token is invalid")
-	ErrExpiredJwtToken        = New("the provided authorization token is expired")
-	ErrDecodeTokenUnknownErr  = New("something went wrong while decoding the token")
-	ErrInvalidAuthHeader      = New("the provided authorization header is not valid")
-	ErrFileAccessDenied       = New("file access denied")
-	ErrFileNotFound           = New("file could not be found")
-	ErrFileNotLocatedInNode   = New("file is not located in this node")
-	ErrInvalidEmailProvided   = New("the provided email address is not valid")
-	ErrInvalidSignUpPayload   = New("the provided sign up body is not valid")
-	ErrUserAlreadyExists      = New("user already exists")
-	ErrEmailTooLarge          = New("the provided email address is too big")
-	ErrPasswordWeak           = New("the provided password can not be used, too weak")
-	ErrUsernameTooLarge       = New("the provided username is too large to be used")
-	ErrNanoIdGenerationFailed = New("failed to generate nanoid")
-	ErrHashingFailed          = New("hashing proccess failed")
-	ErrInvalidSignature       = New("the signature hash is not valid")
-	ErrRndQueryNotProvided    = New("the 'rnd' query parameter was not provided")
-	ErrFailedToFetchFileNode  = New("failed to fetch the node that the file is located")
-	ErrSignupNotAllowed       = New("user signup's are not allowed in this server")
-	ErrInvalidJson            = New("the provided json payload is not valid")
-	ErrStreamNotSupported     = New("content streaming is not supported")
-	ErrInvalidSignInPayload   = New("the provided sign in body is not valid")
-	ErrInvalidIdenPayload     = New("the provided iden payload is not valid")
+	ErrRouteRequiresAuth     = New("this route requires authorization")
+	ErrTokenGenerationFailed = New("failed to generate the jwt token")
+	ErrPasswordHashingFailed = New("failed to hash user password")
+	ErrUserAuthFailed        = New("user not found or password do not match")
+	ErrInvalidJwtToken       = New("the provided authorization token is invalid")
+	ErrExpiredJwtToken       = New("the provided authorization token is expired")
+	ErrDecodeTokenUnknownErr = New("something went wrong while decoding the token")
+	ErrInvalidAuthHeader     = New("the provided authorization header is not valid")
+	ErrFileAccessDenied      = New("file access denied")
+	ErrFileNotFound          = New("file could not be found")
+	ErrFileNotLocatedInNode  = New("file is not located in this node")
+	ErrInvalidEmailProvided  = New("the provided email address is not valid")
+	ErrInvalidSignUpPayload  = New("the provided sign up body is not valid")
+	ErrUserAlreadyExists     = New("user already exists")
+	ErrEmailTooLarge         = New("the provided email address is too big")
+	ErrPasswordWeak          = New("the provided password can not be used, too weak")
+	ErrUsernameTooLarge      = New("the provided username is too large to be used")
+	ErrUUIDGenerationFailed  = New("failed to generate uuid")
+	ErrHashingFailed         = New("hashing proccess failed")
+	ErrInvalidSignature      = New("the signature hash is not valid")
+	ErrRndQueryNotProvided   = New("the 'rnd' query parameter was not provided")
+	ErrFailedToFetchFileNode = New("failed to fetch the node that the file is located")
+	ErrSignupNotAllowed      = New("user signup's are not allowed in this server")
+	ErrInvalidJson           = New("the provided json payload is not valid")
+	ErrStreamNotSupported    = New("content streaming is not supported")
+	ErrInvalidSignInPayload  = New("the provided sign in body is not valid")
+	ErrInvalidIdenPayload    = New("the provided iden payload is not valid")
+	ErrInvalidUUID           = New("the provided uuid is not valid")
 )

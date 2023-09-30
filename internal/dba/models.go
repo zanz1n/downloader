@@ -54,19 +54,19 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 }
 
 type File struct {
-	ID          string           `json:"id"`
+	ID          pgtype.UUID      `json:"id"`
 	CreatedAt   pgtype.Timestamp `json:"createdAt"`
 	UpdatedAt   pgtype.Timestamp `json:"updatedAt"`
 	Name        string           `json:"name"`
 	ContentType string           `json:"contentType"`
 	Size        int64            `json:"size"`
 	Checksum    string           `json:"checksum"`
-	NodeId      string           `json:"nodeId"`
-	UserId      string           `json:"userId"`
+	NodeId      pgtype.UUID      `json:"nodeId"`
+	UserId      pgtype.UUID      `json:"userId"`
 }
 
 type Node struct {
-	ID          string           `json:"id"`
+	ID          pgtype.UUID      `json:"id"`
 	CreatedAt   pgtype.Timestamp `json:"createdAt"`
 	UpdatedAt   pgtype.Timestamp `json:"updatedAt"`
 	Name        string           `json:"name"`
@@ -79,7 +79,7 @@ type Node struct {
 }
 
 type User struct {
-	ID        string           `json:"id"`
+	ID        pgtype.UUID      `json:"id"`
 	CreatedAt pgtype.Timestamp `json:"createdAt"`
 	UpdatedAt pgtype.Timestamp `json:"updatedAt"`
 	FirstName string           `json:"firstName"`

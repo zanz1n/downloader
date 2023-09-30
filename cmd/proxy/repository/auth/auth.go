@@ -134,7 +134,7 @@ func (as *AuthService) AuthUser(email, passwd string) (string, error) {
 	expiry := now.Add(as.UserTokenDuration)
 
 	claims := UserJwtPayload{
-		UserID:     info.ID,
+		UserID:     dba.UUIDToString(info.ID),
 		Email:      info.Email,
 		ExpiryDate: expiry.Unix(),
 		IssuedAt:   now.Unix(),

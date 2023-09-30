@@ -10,7 +10,6 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/joho/godotenv v1.5.1
-	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/valyala/fasthttp v1.50.0
 	golang.org/x/crypto v0.9.0

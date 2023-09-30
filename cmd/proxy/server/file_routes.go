@@ -29,16 +29,22 @@ func (s *Server) HandleGetFile(c *fasthttp.RequestCtx) {
 		s.HandleError(c, err)
 		return
 	}
+	fileUUID, err := dba.UUIDFromString(fileId)
+	if err != nil {
+		s.HandleError(c, err)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	info, err := s.db.GetFileAndNodeInfo(ctx, fileId)
+	info, err := s.db.GetFileAndNodeInfo(ctx, fileUUID)
 	if err != nil {
 		s.HandleError(c, errors.ErrFileNotFound)
 		return
 	}
 
-	if perm.IsUserToken && perm.UserID != info.UserId {
+	if perm.IsUserToken && perm.UserID != dba.UUIDToString(info.UserId) {
 		s.HandleError(c, errors.ErrFileAccessDenied)
 		return
 	}
@@ -81,7 +87,7 @@ func (s *Server) handleGetFileTCP(c *fasthttp.RequestCtx, info *dba.GetFileAndNo
 	}
 
 	idenInfo := transport.IdenPayload{
-		ID:     info.ID,
+		ID:     dba.UUIDToString(info.ID),
 		Random: rnd,
 		Token:  utils.B2S(sig),
 		Type:   transport.RequestTypeRead,
@@ -131,7 +137,7 @@ func (s *Server) handleGetFileHttp(c *fasthttp.RequestCtx, info *dba.GetFileAndN
 	}
 
 	req.SetRequestURI(scheme + "://" + info.NodeAddress + ":" +
-		strconv.Itoa(int(info.NodePort)) + "/file/" + info.ID + "?rnd=" + rnd)
+		strconv.Itoa(int(info.NodePort)) + "/file/" + dba.UUIDToString(info.ID) + "?rnd=" + rnd)
 
 	sig, err := generateSignature(utils.S2B(rnd))
 	if err != nil {
