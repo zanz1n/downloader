@@ -34,4 +34,16 @@ futures-util = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
-axum = { version = "0.7", features = ["http2"] }
+axum = { version = "=0.7.5", features = ["http2", "multipart"] }
+axum-server = { version = "0.7.1", features = ["tls-rustls"] }
+tower-http = { version = "0.5", features = [
+    "catch-panic",
+    "compression-full",
+    "cors",
+    "decompression-full",
+    "sensitive-headers",
+    "set-header",
+    "timeout",
+    "trace",
+] }
+tower = "0.4"
