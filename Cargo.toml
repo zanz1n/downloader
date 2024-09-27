@@ -5,3 +5,33 @@ edition = "2021"
 license = "AGPL-3.0"
 
 description = "A web server to host files"
+
+[profile.release]
+panic = "unwind"
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[dependencies]
+either = { version = "1", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+clap = { version = "4.5.18", features = ["derive"] }
+
+tokio = { version = "1", features = [
+    "rt-multi-thread",
+    "io-util",
+    "net",
+    "time",
+    "macros",
+    "sync",
+    "signal",
+    "fs",
+] }
+futures-util = "0.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+axum = { version = "0.7", features = ["http2"] }

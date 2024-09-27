@@ -1,0 +1,21 @@
+[net]
+enable_http = true
+enable_http_v2 = true
+http_addr = 8080
+
+enable_tcp = true
+tpc_addr = 7777
+
+[ssl]
+enable = true
+cert = "/etc/letsencrypt/live/example.com/fullchain.pem"
+key = "/etc/letsencrypt/live/example.com/privkey.pem"
+
+[storage]
+data_dir = "/var/lib/downloader/data"
+temp_dir = "/tmp/downloader"
+
+[auth]
+token_cert = "/var/lib/downloader/certs/jwt-cert.pem"
+token_key = "/var/lib/downloader/certs/jwt-key.pem"
+secret_key = "PHJhbmRvbSBiYXNlNjQ+Cg=="
