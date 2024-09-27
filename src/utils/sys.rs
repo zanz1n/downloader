@@ -1,3 +1,5 @@
+use std::future::Future;
+
 #[macro_export]
 macro_rules! fatal {
     () => {
@@ -29,4 +31,39 @@ pub fn fatal(msg: String) -> ! {
     }
 
     std::process::exit(1)
+}
+
+#[cfg(unix)]
+pub fn shutdown_signal(
+) -> std::io::Result<impl Future<Output = ()> + Send + 'static> {
+    use tokio::signal::unix::{signal, SignalKind};
+
+    let mut interrupt = signal(SignalKind::interrupt())?;
+    let mut terminate = signal(SignalKind::terminate())?;
+
+    Ok(async move {
+        tokio::select! {
+            _ = interrupt.recv() => {
+                tracing::info!(target: "sys_signals", "Received SIGING");
+            }
+            _ = terminate.recv() => {
+                tracing::info!(target: "sys_signals", "Received SIGTERM");
+            }
+        }
+    })
+}
+
+#[cfg(not(unix))]
+pub fn shutdown_signal(
+) -> std::io::Result<impl Future<Output = ()> + Send + 'static> {
+    use futures_util::FutureExt;
+
+    Ok(tokio::signal::ctrl_c().map(|res| match res {
+        Ok(_) => {
+            tracing::info!(target: "sys_signals", "Received CTRL_C");
+        }
+        Err(_) => {
+            tracing::error!(target: "sys_signals", "Failed to create CTRL_C signal receiver");
+        }
+    }))
 }
