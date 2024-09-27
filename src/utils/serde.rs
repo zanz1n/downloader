@@ -8,7 +8,7 @@ use std::{
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ResolvedFile(pub String);
+pub struct ResolvedFile(String);
 
 impl ResolvedFile {
     pub fn new(path: String) -> Result<Self, String> {
@@ -50,7 +50,7 @@ impl<'de> Deserialize<'de> for ResolvedFile {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ResolvedPath(pub String);
+pub struct ResolvedPath(String);
 
 impl ResolvedPath {
     pub fn new(path: String) -> Result<Self, String> {
