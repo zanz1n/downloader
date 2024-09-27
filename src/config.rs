@@ -37,8 +37,6 @@ pub struct Config {
 pub struct NetConfig {
     #[serde(default = "default_true")]
     pub enable_http: bool,
-    #[serde(default = "default_true")]
-    pub enable_http_v2: bool,
     #[serde(
         default = "default_http_addr",
         deserialize_with = "deserialize_socket_addr"
@@ -74,7 +72,7 @@ pub struct AuthConfig {
     pub token_cert: ResolvedFile,
     pub token_key: ResolvedFile,
 
-    pub secret_key: Vec<u8>,
+    pub secret_key: String,
 }
 
 const fn default_false() -> bool {
