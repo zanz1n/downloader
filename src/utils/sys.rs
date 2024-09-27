@@ -44,10 +44,10 @@ pub fn shutdown_signal(
     Ok(async move {
         tokio::select! {
             _ = interrupt.recv() => {
-                tracing::info!(target: "sys_signals", "Received SIGING");
+                tracing::info!(target: "sys_signals", "received SIGINT");
             }
             _ = terminate.recv() => {
-                tracing::info!(target: "sys_signals", "Received SIGTERM");
+                tracing::info!(target: "sys_signals", "received SIGTERM");
             }
         }
     })
@@ -60,10 +60,10 @@ pub fn shutdown_signal(
 
     Ok(tokio::signal::ctrl_c().map(|res| match res {
         Ok(_) => {
-            tracing::info!(target: "sys_signals", "Received CTRL_C");
+            tracing::info!(target: "sys_signals", "received CTRL_C");
         }
         Err(_) => {
-            tracing::error!(target: "sys_signals", "Failed to create CTRL_C signal receiver");
+            tracing::error!(target: "sys_signals", "failed to create CTRL_C signal receiver");
         }
     }))
 }

@@ -130,7 +130,7 @@ fn main() {
         }
     };
 
-    tracing::debug!(config = ?cfg, "Loaded configuration");
+    tracing::debug!(config = ?cfg, "loaded configuration");
 
     let tokio_result = Builder::new_multi_thread()
         .enable_all()
