@@ -1,7 +1,3 @@
-mod config;
-mod server;
-mod utils;
-
 use std::error::Error;
 
 use axum::Router;
@@ -13,6 +9,11 @@ use tokio::{runtime::Builder, select};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
 use utils::sys::shutdown_signal;
+
+mod config;
+mod server;
+mod storage;
+mod utils;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
