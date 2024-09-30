@@ -4,6 +4,7 @@ use std::{
     time::Instant,
 };
 
+use axum::http::StatusCode;
 use sha2::Sha256;
 use tokio::{
     fs::{remove_file, rename, File},
@@ -23,6 +24,24 @@ pub enum ObjectError {
     IoError(#[from] io::Error),
     #[error("file not found")]
     NotFound,
+}
+
+impl ObjectError {
+    #[inline]
+    pub fn status_code(&self) -> StatusCode {
+        match self {
+            ObjectError::IoError(..) => StatusCode::INTERNAL_SERVER_ERROR,
+            ObjectError::NotFound => StatusCode::NOT_FOUND,
+        }
+    }
+
+    #[inline]
+    pub fn custom_code(&self) -> u8 {
+        match self {
+            ObjectError::IoError(..) => 1,
+            ObjectError::NotFound => 2,
+        }
+    }
 }
 
 pub struct ObjectManager {

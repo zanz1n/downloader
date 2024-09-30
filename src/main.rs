@@ -11,6 +11,7 @@ use tracing_subscriber::EnvFilter;
 use utils::sys::shutdown_signal;
 
 mod config;
+mod errors;
 mod server;
 mod storage;
 mod utils;
