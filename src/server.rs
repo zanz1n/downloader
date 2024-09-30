@@ -17,6 +17,8 @@ use tower_http::{
 };
 use tracing::Level;
 
+use crate::utils::time::fmt_duration;
+
 #[derive(Clone)]
 struct CustomOnResponse;
 
@@ -96,17 +98,6 @@ impl<C: Display> OnFailure<C> for CustomOnFailure {
             %latency,
             "failure while processing request",
         );
-    }
-}
-
-#[inline]
-fn fmt_duration(latency: Duration) -> String {
-    if latency > Duration::from_secs(1) {
-        format!("{:.1}s", latency.as_secs_f64())
-    } else if latency > Duration::from_millis(1) {
-        format!("{}ms", latency.as_millis())
-    } else {
-        format!("{}μs", latency.as_micros())
     }
 }
 
