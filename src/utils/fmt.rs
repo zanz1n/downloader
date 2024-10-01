@@ -20,3 +20,8 @@ pub fn fmt_duration(latency: Duration) -> String {
         format!("{}μs", latency.as_micros())
     }
 }
+
+#[inline]
+pub fn fmt_hex(buf: &[u8]) -> String {
+    hex::encode(buf)
+}

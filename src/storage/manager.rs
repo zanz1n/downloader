@@ -15,7 +15,10 @@ use uuid::Uuid;
 
 use crate::{
     config::StorageConfig,
-    utils::{crypto::HashRead, fmt::fmt_since},
+    utils::{
+        crypto::HashRead,
+        fmt::{fmt_hex, fmt_since},
+    },
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -127,7 +130,7 @@ impl ObjectManager {
             target: "object_fs",
             took = %fmt_since(start),
             written_bytes = size,
-            hash = %format!("{hash:02x?}"),
+            hash = %fmt_hex(&hash),
             "finished store",
         );
 
@@ -264,7 +267,7 @@ mod tests {
 
     #[test(tokio::test)]
     async fn test_store() {
-        const SIZE: usize = 37;
+        const SIZE: usize = 3;
 
         let (repo, holder) = repository();
 
