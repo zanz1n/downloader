@@ -17,7 +17,7 @@ use tower_http::{
 };
 use tracing::Level;
 
-use crate::utils::time::fmt_duration;
+use crate::utils::fmt::fmt_duration;
 
 #[derive(Clone)]
 struct CustomOnResponse;

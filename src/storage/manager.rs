@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 use crate::{
     config::StorageConfig,
-    utils::{crypto::HashRead, time::fmt_since},
+    utils::{crypto::HashRead, fmt::fmt_since},
 };
 
 #[derive(Debug, thiserror::Error)]
