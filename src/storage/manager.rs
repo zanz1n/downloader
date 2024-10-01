@@ -205,6 +205,7 @@ mod tests {
     use rand::RngCore;
     use sha2::{Digest, Sha256};
     use tempfile::TempDir;
+    use test_log::test;
     use tokio::{
         fs::File,
         io::{copy, AsyncRead},
@@ -261,9 +262,9 @@ mod tests {
         (file, hash)
     }
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn test_store() {
-        const SIZE: usize = 3;
+        const SIZE: usize = 37;
 
         let (repo, holder) = repository();
 
@@ -300,7 +301,7 @@ mod tests {
         );
     }
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn test_delete() {
         const SIZE: usize = 1;
 

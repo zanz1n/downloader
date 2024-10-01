@@ -235,6 +235,7 @@ where
 mod tests {
     use sha2::{Digest, Sha256};
     use sqlx::{migrate, Pool, Sqlite};
+    use test_log::test;
     use uuid::Uuid;
 
     use crate::storage::{repository::RepositoryError, ObjectData};
@@ -261,7 +262,7 @@ mod tests {
         ObjectRepository::new(db)
     }
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn test_create() {
         let repo = repository().await;
 
@@ -274,7 +275,7 @@ mod tests {
         assert_eq!(data, obj.data, "fetched data mismatches the created one");
     }
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn test_update() {
         let repo = repository().await;
 
@@ -289,7 +290,7 @@ mod tests {
         assert_eq!(data, obj.data, "fetched data mismatches the updated one");
     }
 
-    #[tokio::test]
+    #[test(tokio::test)]
     async fn test_delete() {
         let repo = repository().await;
 
