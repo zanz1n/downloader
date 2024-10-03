@@ -5,4 +5,5 @@ config.toml
 
 /data
 /tmp
+/bin
 *.sqlite
