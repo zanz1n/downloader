@@ -44,4 +44,4 @@ jobs:
       - name: Test
         env:
           RUST_LOG: debug
-        run: cargo test --verbose -- --nocapture
+        run: cargo test -- --nocapture
