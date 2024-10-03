@@ -46,9 +46,7 @@ axum = { version = "=0.7.5", features = ["http2", "multipart"] }
 axum-server = { version = "0.7.1", features = ["tls-rustls"] }
 tower-http = { version = "0.5", features = [
     "catch-panic",
-    "compression-full",
     "cors",
-    "decompression-full",
     "sensitive-headers",
     "set-header",
     "timeout",

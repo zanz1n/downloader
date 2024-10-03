@@ -7,9 +7,7 @@ use axum::{
 use tower::ServiceBuilder;
 use tower_http::{
     catch_panic::CatchPanicLayer,
-    compression::CompressionLayer,
     cors::CorsLayer,
-    decompression::RequestDecompressionLayer,
     sensitive_headers::SetSensitiveHeadersLayer,
     set_header::SetResponseHeaderLayer,
     timeout::TimeoutLayer,
@@ -69,7 +67,7 @@ impl<B> MakeSpan<B> for CustomMakeSpan {
     #[inline]
     fn make_span(&mut self, request: &axum::http::Request<B>) -> tracing::Span {
         tracing::span!(
-            Level::DEBUG,
+            Level::INFO,
             "request",
             method = %request.method().as_str(),
             path = %request.uri().path(),
@@ -101,7 +99,10 @@ impl<C: Display> OnFailure<C> for CustomOnFailure {
     }
 }
 
-pub fn layer_router(router: Router) -> Router {
+pub fn layer_router<S>(router: Router<S>) -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+{
     let layer = ServiceBuilder::new()
         .layer(SetSensitiveHeadersLayer::new(once(header::AUTHORIZATION)))
         .layer(
@@ -117,9 +118,7 @@ pub fn layer_router(router: Router) -> Router {
         ))
         .layer(TimeoutLayer::new(Duration::from_secs(10)))
         .layer(CatchPanicLayer::new())
-        .layer(CorsLayer::permissive())
-        .layer(RequestDecompressionLayer::new())
-        .layer(CompressionLayer::new());
+        .layer(CorsLayer::permissive());
 
     router.layer(layer)
 }
