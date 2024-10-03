@@ -19,25 +19,24 @@ jobs:
       - name: Checkout LFS objects
         run: git lfs checkout
 
-      - name: Install GCC
-        run: |
-          sudo apt update
-          sudo apt -y install gcc-aarch64-linux-gnu gcc-x86-64-linux-gnu
+      - name: Install docker
+        uses: docker-practice/actions-setup-docker@master
+        timeout-minutes: 10
 
-      - name: Install rust targets
+      - name: Install cross
         run: |
-          rustup target add x86_64-unknown-linux-gnu
-          rustup target add aarch64-unknown-linux-gnu
           mkdir bin
+          curl -L https://github.com/cross-rs/cross/releases/latest/download/cross-$(uname -m)-unknown-linux-gnu.tar.gz | tar -xz -C bin
+          chmod +x ./bin/*
 
       - name: Build (x86_64)
         run: |
-          cross build --target=x86_64-unknown-linux-gnu --release
+          ./bin/cross build --target=x86_64-unknown-linux-gnu --release
           cp target/x86_64-unknown-linux-gnu/release/downloader bin/downloader-amd64
 
       - name: Build (aarch64)
         run: |
-          cross build --target=aarch64-unknown-linux-gnu --release
+          ./bin/cross build --target=aarch64-unknown-linux-gnu --release
           cp target/aarch64-unknown-linux-gnu/release/downloader bin/downloader-arm64
 
       - name: Create checksum
