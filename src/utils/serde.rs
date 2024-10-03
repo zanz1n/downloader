@@ -1,8 +1,9 @@
 use std::{
     fmt::Debug,
-    fs::{self},
+    fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     ops::Deref,
+    path::{Path, PathBuf},
 };
 
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize};
@@ -62,6 +63,12 @@ impl ResolvedPath {
         }
 
         Ok(ResolvedPath(path))
+    }
+
+    pub fn join(&self, path: impl AsRef<Path>) -> PathBuf {
+        let mut new = PathBuf::from(&self.0);
+        new.push(path);
+        new
     }
 }
 
