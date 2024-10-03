@@ -1,5 +1,5 @@
 use std::{
-    fs::{self},
+    fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
 };
 
@@ -62,6 +62,7 @@ pub struct SslConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageConfig {
+    pub state_dir: ResolvedPath,
     pub data_dir: ResolvedPath,
     #[serde(default = "default_temp_dir")]
     pub temp_dir: ResolvedPath,

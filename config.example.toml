@@ -11,6 +11,7 @@ cert = "/etc/letsencrypt/live/example.com/fullchain.pem"
 key = "/etc/letsencrypt/live/example.com/privkey.pem"
 
 [storage]
+state_dir = "/var/lib/downloader/state"
 data_dir = "/var/lib/downloader/data"
 temp_dir = "/tmp/downloader"
 
