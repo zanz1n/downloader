@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 pub mod manager;
 pub mod repository;
+pub mod routes;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Object {

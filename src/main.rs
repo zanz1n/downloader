@@ -1,10 +1,12 @@
-use std::error::Error;
+use std::{error::Error, sync::Arc};
 
-use axum::Router;
+use axum::{routing, Extension, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use config::Config;
 use server::layer_router;
+use sqlx::{migrate, SqlitePool};
+use storage::{manager::ObjectManager, repository::ObjectRepository, routes};
 use tokio::{runtime::Builder, select};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
@@ -33,7 +35,33 @@ struct Args {
 }
 
 async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let app = layer_router(Router::new());
+    let manager = ObjectManager::new(&cfg.storage);
+
+    let sqlite_uri =
+        format!("sqlite:{:?}", cfg.storage.state_dir.join("files.sqlite"));
+
+    let db = SqlitePool::connect(&sqlite_uri).await?;
+    migrate!().run(&db).await?;
+
+    let repository = ObjectRepository::new(db);
+
+    let app = layer_router(
+        Router::new()
+            .route("/file/:id", routing::get(routes::get_file))
+            .route("/file", routing::post(routes::post_file))
+            .route("/file/:id", routing::delete(routes::delete_file))
+            .route("/file/:id", routing::put(routes::update_file))
+            .route(
+                "/file-multipart",
+                routing::post(routes::post_file_multipart),
+            )
+            .route(
+                "/file-multipart/:id",
+                routing::put(routes::update_file_multipart),
+            )
+            .layer(Extension(repository))
+            .layer(Extension(Arc::new(manager))),
+    );
 
     let tls_cfg = load_tls_config(&cfg.ssl).await;
 
