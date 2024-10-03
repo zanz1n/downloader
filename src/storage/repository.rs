@@ -52,6 +52,15 @@ pub struct ObjectRepository<DB: Database> {
     db: Pool<DB>,
 }
 
+impl<DB: Database> Clone for ObjectRepository<DB> {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            db: self.db.clone(),
+        }
+    }
+}
+
 impl<DB: Database> ObjectRepository<DB> {
     pub fn new(db: Pool<DB>) -> ObjectRepository<DB> {
         ObjectRepository { db }
@@ -157,10 +166,9 @@ where
 
     pub async fn create(
         &self,
+        id: Uuid,
         data: ObjectData,
     ) -> Result<Object, RepositoryError> {
-        let id = Uuid::new_v4();
-
         let now = Utc::now();
         let now_ms = now.timestamp_millis();
 
@@ -268,7 +276,7 @@ mod tests {
 
         let data = rand_data();
 
-        let obj = repo.create(data.clone()).await.unwrap();
+        let obj = repo.create(Uuid::new_v4(), data.clone()).await.unwrap();
         assert_eq!(data, obj.data, "created data mismatches the provided one");
 
         let obj = repo.get(obj.id).await.unwrap();
@@ -280,7 +288,7 @@ mod tests {
         let repo = repository().await;
 
         let data = rand_data();
-        let obj = repo.create(rand_data()).await.unwrap();
+        let obj = repo.create(Uuid::new_v4(), rand_data()).await.unwrap();
         let id = obj.id;
 
         let obj = repo.update(obj.id, data.clone()).await.unwrap();
@@ -295,7 +303,7 @@ mod tests {
         let repo = repository().await;
 
         let data = rand_data();
-        let obj = repo.create(data.clone()).await.unwrap();
+        let obj = repo.create(Uuid::new_v4(), data.clone()).await.unwrap();
         let id = obj.id;
 
         let obj = repo.delete(id).await.unwrap();
