@@ -47,6 +47,7 @@ axum-server = { version = "0.7.1", features = ["tls-rustls"] }
 tower-http = { version = "0.5", features = [
     "catch-panic",
     "cors",
+    "normalize-path",
     "sensitive-headers",
     "set-header",
     "trace",

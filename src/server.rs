@@ -8,6 +8,7 @@ use tower::ServiceBuilder;
 use tower_http::{
     catch_panic::CatchPanicLayer,
     cors::CorsLayer,
+    normalize_path::NormalizePathLayer,
     sensitive_headers::SetSensitiveHeadersLayer,
     set_header::SetResponseHeaderLayer,
     trace::{MakeSpan, OnFailure, OnRequest, OnResponse, TraceLayer},
@@ -115,9 +116,9 @@ where
             header::SERVER,
             HeaderValue::from_static("axum/0.7.5"),
         ))
-        // .layer(TimeoutLayer::new(Duration::from_secs(10)))
         .layer(CatchPanicLayer::new())
-        .layer(CorsLayer::permissive());
+        .layer(CorsLayer::permissive())
+        .layer(NormalizePathLayer::trim_trailing_slash());
 
     router.layer(layer)
 }
