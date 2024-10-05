@@ -204,17 +204,35 @@ async fn post_file_internal(
     let id = Uuid::new_v4();
     let (size, checksum_256) = manager.store(id, reader).await?;
 
-    repo.create(
-        id,
-        ObjectData {
-            name,
-            mime_type,
-            size,
-            checksum_256,
-        },
-    )
-    .await
-    .map_err(DownloaderError::Repository)
+    let data = ObjectData {
+        name,
+        mime_type,
+        size,
+        checksum_256,
+    };
+
+    match repo.create(id, data).await {
+        Ok(v) => Ok(v),
+        Err(error) => {
+            tracing::error!(
+                target: "routes::post",
+                %error,
+                %id,
+                "create object entry failed after store",
+            );
+
+            let _ = manager.delete(id).await.map_err(|error| {
+                tracing::error!(
+                    target: "storage::routes::post",
+                    %error,
+                    %id,
+                    "delete object without repository entry failed",
+                );
+            });
+
+            Err(error.into())
+        }
+    }
 }
 
 async fn update_file_internal(
@@ -237,5 +255,13 @@ async fn update_file_internal(
         },
     )
     .await
-    .map_err(DownloaderError::Repository)
+    .map_err(|error| {
+        tracing::error!(
+            target: "storage::routes::update",
+            %error,
+            %id,
+            "update object entry failed after store",
+        );
+        error.into()
+    })
 }

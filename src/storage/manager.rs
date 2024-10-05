@@ -88,29 +88,40 @@ impl ObjectManager {
             error
         })?;
 
-        let size = copy(&mut reader, &mut file).await.map_err(|error| {
-            tracing::warn!(
-                target: "object_fs",
-                %error,
-                took = %fmt_since(start),
-                "interrupted by IO",
-            );
-            error
-        })?;
+        let size = match copy(&mut reader, &mut file).await {
+            Ok(v) => v,
+            Err(error) => {
+                tracing::warn!(
+                    target: "object_fs",
+                    %error,
+                    took = %fmt_since(start),
+                    "interrupted by IO",
+                );
+
+                let _ = remove_file(&temp_dir).await.map_err(|error| {
+                    tracing::error!(
+                        target: "object_fs",
+                        %error,
+                        path = ?temp_dir,
+                        took = %fmt_since(start),
+                        "delete file after IO interruption failed",
+                    );
+                });
+
+                return Err(error.into());
+            }
+        };
 
         let def_dir = self.data_dir.join(&id);
 
-        let rename_res = rename(&temp_dir, &def_dir).await.map_err(|error| {
+        if let Err(error) = rename(&temp_dir, &def_dir).await {
             tracing::error!(
                 target: "object_fs",
                 %error,
                 took = %fmt_since(start),
                 "move file failed",
             );
-            error
-        });
 
-        if let Err(err) = rename_res {
             let _ = remove_file(&temp_dir).await.map_err(|error| {
                 tracing::error!(
                     target: "object_fs",
@@ -121,7 +132,7 @@ impl ObjectManager {
                 );
             });
 
-            return Err(err.into());
+            return Err(error.into());
         }
 
         let hash: [u8; 32] = reader.hash_into();
