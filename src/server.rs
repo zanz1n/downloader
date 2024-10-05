@@ -1,12 +1,14 @@
 use std::{fmt::Display, iter::once, time::Duration};
 
 use axum::{
+    body::Body,
     http::{header, HeaderValue},
+    response::IntoResponse,
     Router,
 };
 use tower::ServiceBuilder;
 use tower_http::{
-    catch_panic::CatchPanicLayer,
+    catch_panic::{CatchPanicLayer, ResponseForPanic},
     cors::CorsLayer,
     normalize_path::NormalizePathLayer,
     sensitive_headers::SetSensitiveHeadersLayer,
@@ -15,7 +17,10 @@ use tower_http::{
 };
 use tracing::Level;
 
-use crate::utils::fmt::fmt_duration;
+use crate::{
+    errors::{DownloaderError, HttpError},
+    utils::fmt::fmt_duration,
+};
 
 #[derive(Clone)]
 struct CustomOnResponse;
@@ -99,6 +104,31 @@ impl<C: Display> OnFailure<C> for CustomOnFailure {
     }
 }
 
+#[derive(Debug, Clone)]
+struct JsonPanicHandler;
+
+impl ResponseForPanic for JsonPanicHandler {
+    type ResponseBody = Body;
+
+    fn response_for_panic(
+        &mut self,
+        err: Box<dyn std::any::Any + Send + 'static>,
+    ) -> axum::http::Response<Self::ResponseBody> {
+        if let Some(s) = err.downcast_ref::<String>() {
+            tracing::error!(target: "http_logs", "service panicked: {}", s);
+        } else if let Some(s) = err.downcast_ref::<&str>() {
+            tracing::error!(target: "http_logs", "service panicked: {}", s);
+        } else {
+            tracing::error!(
+                target: "http_logs",
+                "service panicked but `CatchPanic` was unable to downcast the panic info"
+            );
+        };
+
+        DownloaderError::Http(HttpError::ServicePanicked).into_response()
+    }
+}
+
 pub fn layer_router<S>(router: Router<S>) -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
@@ -116,7 +146,7 @@ where
             header::SERVER,
             HeaderValue::from_static("axum/0.7.5"),
         ))
-        .layer(CatchPanicLayer::new())
+        .layer(CatchPanicLayer::custom(JsonPanicHandler))
         .layer(CorsLayer::permissive())
         .layer(NormalizePathLayer::trim_trailing_slash());
 

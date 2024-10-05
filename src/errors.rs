@@ -67,6 +67,8 @@ pub enum HttpError {
     InvalidFormBoundary,
     #[error("route not found")]
     RouteNotFound,
+    #[error("service panicked")]
+    ServicePanicked,
 }
 
 impl HttpError {
@@ -76,6 +78,7 @@ impl HttpError {
             HttpError::InvalidFormBoundary => StatusCode::BAD_REQUEST,
             HttpError::InvalidFormLength { .. } => StatusCode::BAD_REQUEST,
             HttpError::RouteNotFound => StatusCode::NOT_FOUND,
+            HttpError::ServicePanicked => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -85,6 +88,7 @@ impl HttpError {
             HttpError::InvalidFormLength { .. } => todo!(),
             HttpError::InvalidFormBoundary => 1,
             HttpError::RouteNotFound => 100,
+            HttpError::ServicePanicked => 255,
         }
     }
 }
