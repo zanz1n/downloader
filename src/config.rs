@@ -3,6 +3,7 @@ use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
 };
 
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 use crate::utils::serde::{
@@ -14,6 +15,22 @@ pub const DEFAULT_HTTP_ADDR: SocketAddr =
 pub const DEFAULT_TCP_ADDR: SocketAddr =
     SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 7777);
 pub const DEFAULT_TEMP_DIR: &'static str = "/tmp/downloader";
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct Args {
+    #[arg(short, long, default_value_t = false)]
+    pub debug: bool,
+    #[arg(short, long, default_value_t = false)]
+    pub json_logs: bool,
+
+    #[arg(
+        short,
+        long,
+        default_value_t = String::from("/etc/downloader/config.toml"),
+    )]
+    pub config_path: String,
+}
 
 pub fn load(path: &str) -> Result<Config, Box<dyn std::error::Error>> {
     let file = fs::read_to_string(path)?;

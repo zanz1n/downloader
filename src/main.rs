@@ -3,7 +3,7 @@ use std::{error::Error, io::ErrorKind, path::Path, sync::Arc};
 use axum::{routing, Extension, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
-use config::Config;
+use config::{Args, Config};
 use server::layer_router;
 use sqlx::{migrate, SqlitePool};
 use storage::{manager::ObjectManager, repository::ObjectRepository, routes};
@@ -17,22 +17,6 @@ mod errors;
 mod server;
 mod storage;
 mod utils;
-
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[arg(short, long, default_value_t = false)]
-    pub debug: bool,
-    #[arg(short, long, default_value_t = false)]
-    pub json_logs: bool,
-
-    #[arg(
-        short,
-        long,
-        default_value_t = String::from("/etc/downloader/config.toml"),
-    )]
-    pub config_path: String,
-}
 
 async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
     let manager = ObjectManager::new(&cfg.storage);
