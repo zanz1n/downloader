@@ -8,10 +8,14 @@ use uuid::Uuid;
 
 use super::{Object, ObjectData};
 
+pub const MAX_LIMIT: u32 = 100;
+
 #[derive(Debug, thiserror::Error)]
 pub enum RepositoryError {
     #[error("object `{0}` not found")]
     NotFound(Uuid),
+    #[error("the provided limit {0} is beyond the maximum of {MAX_LIMIT}")]
+    LimitOutOfRange(u32),
     #[error("sqlx error while fetching: {0}")]
     GetFailed(sqlx::Error),
     #[error("sqlx error while creating: {0}")]
@@ -27,6 +31,7 @@ impl RepositoryError {
     pub fn status_code(&self) -> StatusCode {
         match self {
             RepositoryError::NotFound(..) => StatusCode::NOT_FOUND,
+            RepositoryError::LimitOutOfRange(..) => StatusCode::BAD_REQUEST,
             RepositoryError::GetFailed(..)
             | RepositoryError::CreateFailed(..)
             | RepositoryError::UpdateFailed(..)
@@ -40,9 +45,10 @@ impl RepositoryError {
     pub fn custom_code(&self) -> u8 {
         match self {
             RepositoryError::NotFound(..) => 1,
-            RepositoryError::GetFailed(..) => 2,
-            RepositoryError::CreateFailed(..) => 3,
-            RepositoryError::UpdateFailed(..) => 4,
+            RepositoryError::LimitOutOfRange(..) => 2,
+            RepositoryError::GetFailed(..) => 3,
+            RepositoryError::CreateFailed(..) => 4,
+            RepositoryError::UpdateFailed(..) => 5,
             RepositoryError::DeleteFailed(..) => 6,
         }
     }
@@ -164,6 +170,32 @@ where
             .ok_or(RepositoryError::NotFound(id))
     }
 
+    pub async fn get_all(
+        &self,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<Object>, RepositoryError> {
+        if limit > MAX_LIMIT {
+            return Err(RepositoryError::LimitOutOfRange(limit));
+        }
+
+        sqlx::query_as(
+            "SELECT * FROM object WHERE rowid > $1 \
+            ORDER BY rowid LIMIT $2",
+        )
+        .bind(offset as i64)
+        .bind(limit as i64)
+        .fetch_all(&self.db)
+        .await
+        .map_err(|error| {
+            tracing::error!(
+                %error,
+                "got sqlx error while retrieving multiple objects",
+            );
+            RepositoryError::GetFailed(error)
+        })
+    }
+
     pub async fn create(
         &self,
         id: Uuid,
@@ -268,6 +300,62 @@ mod tests {
         migrate!().run(&db).await.unwrap();
 
         ObjectRepository::new(db)
+    }
+
+    #[test(tokio::test)]
+    async fn test_get_all() {
+        const SIZE: usize = 13;
+
+        let repo = repository().await;
+        let mut datas = Vec::with_capacity(SIZE);
+
+        for _ in 0..SIZE {
+            let id = Uuid::new_v4();
+            let data = rand_data();
+
+            datas.push((id, data.clone()));
+            repo.create(id, data).await.unwrap();
+        }
+
+        let all_data = repo.get_all(SIZE as u32, 0).await.unwrap();
+
+        assert!(
+            all_data.into_iter().map(|v| (v.id, v.data)).eq(datas),
+            "returned data in get_all mismatches the created one"
+        );
+    }
+
+    #[test(tokio::test)]
+    async fn test_get_all_offset() {
+        const SIZE: usize = 28;
+        const CHUNK_SIZE: usize = 4;
+
+        let repo = repository().await;
+        let mut datas = Vec::with_capacity(SIZE);
+
+        for _ in 0..SIZE {
+            let id = Uuid::new_v4();
+            let data = rand_data();
+
+            datas.push((id, data.clone()));
+            repo.create(id, data).await.unwrap();
+        }
+
+        let mut all_data = Vec::new();
+
+        for i in 0..(SIZE / CHUNK_SIZE) {
+            let chunk = repo
+                .get_all(CHUNK_SIZE as u32, (CHUNK_SIZE * i) as u32)
+                .await
+                .unwrap();
+
+            all_data.extend(chunk);
+        }
+
+        assert!(
+            all_data.into_iter().map(|v| (v.id, v.data)).eq(datas),
+            "returned data in get_all mismatches the created one"
+        );
     }
 
     #[test(tokio::test)]

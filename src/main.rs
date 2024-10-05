@@ -36,6 +36,7 @@ async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
     let app = layer_router(
         Router::new()
             .route("/file/:id", routing::get(routes::get_file))
+            .route("/files", routing::get(routes::get_all_files))
             .route("/file", routing::post(routes::post_file))
             .route("/file/:id", routing::delete(routes::delete_file))
             .route("/file/:id", routing::put(routes::update_file))

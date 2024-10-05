@@ -27,6 +27,22 @@ pub struct PostFileData {
     pub name: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaginationData {
+    #[serde(default = "default_pagination_limit")]
+    pub limit: u32,
+    #[serde(default = "default_pagination_offset")]
+    pub offset: u32,
+}
+
+const fn default_pagination_limit() -> u32 {
+    100
+}
+
+const fn default_pagination_offset() -> u32 {
+    0
+}
+
 pub async fn get_file(
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
@@ -44,6 +60,16 @@ pub async fn get_file(
         .header(header::CONTENT_LENGTH, object.data.size.to_string())
         .body(Body::from_stream(ReaderStream::new(reader)))
         .map_err(DownloaderError::from)
+}
+
+pub async fn get_all_files(
+    Extension(repo): Extension<ObjectRepository<Sqlite>>,
+    Query(data): Query<PaginationData>,
+) -> Result<Json<Vec<Object>>, DownloaderError> {
+    repo.get_all(data.limit, data.offset)
+        .await
+        .map(Json)
+        .map_err(DownloaderError::Repository)
 }
 
 pub async fn post_file(
