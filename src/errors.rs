@@ -21,6 +21,9 @@ pub enum DownloaderError {
     AxumHttp(#[from] axum::http::Error),
     #[error("Multipart form error: {0}")]
     Multipart(#[from] MultipartError),
+
+    #[error("{0}")]
+    Other(String, StatusCode),
 }
 
 impl DownloaderError {
@@ -32,6 +35,7 @@ impl DownloaderError {
             DownloaderError::Http(e) => e.status_code(),
             DownloaderError::AxumHttp(..) => StatusCode::INTERNAL_SERVER_ERROR,
             DownloaderError::Multipart(e) => e.status(),
+            DownloaderError::Other(.., code) => *code,
         }
     }
 
@@ -42,6 +46,7 @@ impl DownloaderError {
             DownloaderError::Http(e) => e.custom_code(),
             DownloaderError::AxumHttp(..) => 0,
             DownloaderError::Multipart(..) => 0,
+            DownloaderError::Other(..) => 0,
         };
 
         let c = match self {
@@ -50,6 +55,7 @@ impl DownloaderError {
             DownloaderError::Http(..) => 3,
             DownloaderError::AxumHttp(..) => 100,
             DownloaderError::Multipart(..) => 101,
+            DownloaderError::Other(..) => 0,
         };
 
         (c * 1000) + (ic as u32)

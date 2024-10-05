@@ -2,10 +2,10 @@ use std::{io, sync::Arc};
 
 use axum::{
     body::Body,
-    extract::{multipart::MultipartError, Multipart, Path, Query, Request},
+    extract::{multipart::MultipartError, Multipart, Path, Request},
     http::{header, HeaderValue},
     response::Response,
-    Extension, Json,
+    Extension,
 };
 use futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};
@@ -18,6 +18,7 @@ use uuid::Uuid;
 use crate::{
     errors::{DownloaderError, HttpError},
     storage::ObjectData,
+    utils::extractors::{Json, Query},
 };
 
 use super::{manager::ObjectManager, repository::ObjectRepository, Object};
