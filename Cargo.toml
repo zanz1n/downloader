@@ -49,7 +49,6 @@ tower-http = { version = "0.5", features = [
     "cors",
     "sensitive-headers",
     "set-header",
-    "timeout",
     "trace",
 ] }
 tower = "0.4"

@@ -10,7 +10,6 @@ use tower_http::{
     cors::CorsLayer,
     sensitive_headers::SetSensitiveHeadersLayer,
     set_header::SetResponseHeaderLayer,
-    timeout::TimeoutLayer,
     trace::{MakeSpan, OnFailure, OnRequest, OnResponse, TraceLayer},
 };
 use tracing::Level;
@@ -116,7 +115,7 @@ where
             header::SERVER,
             HeaderValue::from_static("axum/0.7.5"),
         ))
-        .layer(TimeoutLayer::new(Duration::from_secs(10)))
+        // .layer(TimeoutLayer::new(Duration::from_secs(10)))
         .layer(CatchPanicLayer::new())
         .layer(CorsLayer::permissive());
 
