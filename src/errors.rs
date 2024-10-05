@@ -10,16 +10,16 @@ use crate::storage::{manager::ObjectError, repository::RepositoryError};
 
 #[derive(Debug, thiserror::Error)]
 pub enum DownloaderError {
-    #[error(transparent)]
+    #[error("Repository error: {0}")]
     Repository(#[from] RepositoryError),
-    #[error(transparent)]
+    #[error("Storage error: {0}")]
     Object(#[from] ObjectError),
-    #[error(transparent)]
+    #[error("Http error: {0}")]
     Http(#[from] HttpError),
 
-    #[error(transparent)]
+    #[error("Http error: {0}")]
     AxumHttp(#[from] axum::http::Error),
-    #[error(transparent)]
+    #[error("Multipart form error: {0}")]
     Multipart(#[from] MultipartError),
 }
 
@@ -65,6 +65,8 @@ pub enum HttpError {
     InvalidFormLength { expected: usize, got: usize },
     #[error("the provided form boundary is invalid")]
     InvalidFormBoundary,
+    #[error("route not found")]
+    RouteNotFound,
 }
 
 impl HttpError {
@@ -73,6 +75,7 @@ impl HttpError {
         match self {
             HttpError::InvalidFormBoundary => StatusCode::BAD_REQUEST,
             HttpError::InvalidFormLength { .. } => StatusCode::BAD_REQUEST,
+            HttpError::RouteNotFound => StatusCode::NOT_FOUND,
         }
     }
 
@@ -81,33 +84,44 @@ impl HttpError {
         match self {
             HttpError::InvalidFormLength { .. } => todo!(),
             HttpError::InvalidFormBoundary => 1,
+            HttpError::RouteNotFound => 100,
         }
     }
 }
 
 #[derive(Debug, Serialize)]
-struct ErrorResponse {
-    error: String,
-    error_code: u32,
+pub struct ErrorResponse {
+    pub error: String,
+    pub error_code: u32,
+    #[serde(skip_serializing)]
+    pub status_code: StatusCode,
 }
 
-impl IntoResponse for DownloaderError {
+impl IntoResponse for ErrorResponse {
     fn into_response(self) -> Response {
         let mut mime_type = mime::APPLICATION_JSON.essence_str();
 
-        let body_data = serde_json::to_string(&ErrorResponse {
-            error: self.to_string(),
-            error_code: self.custom_code(),
-        })
-        .unwrap_or_else(|err| {
+        let body_data = serde_json::to_string(&self).unwrap_or_else(|err| {
             mime_type = mime::TEXT_PLAIN.essence_str();
             err.to_string()
         });
 
         Response::builder()
             .header(header::CONTENT_TYPE, mime_type)
-            .status(self.status_code())
+            .status(self.status_code)
             .body(Body::new(body_data))
             .expect("failed to build response")
+    }
+}
+
+impl IntoResponse for DownloaderError {
+    #[inline]
+    fn into_response(self) -> Response {
+        ErrorResponse {
+            error: self.to_string(),
+            error_code: self.custom_code(),
+            status_code: self.status_code(),
+        }
+        .into_response()
     }
 }

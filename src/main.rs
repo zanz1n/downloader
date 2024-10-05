@@ -4,6 +4,7 @@ use axum::{routing, Extension, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use config::{Args, Config};
+use errors::{DownloaderError, HttpError};
 use server::layer_router;
 use sqlx::{migrate, SqlitePool};
 use storage::{manager::ObjectManager, repository::ObjectRepository, routes};
@@ -35,6 +36,9 @@ async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
 
     let app = layer_router(
         Router::new()
+            .fallback(routing::get(|| async {
+                DownloaderError::Http(HttpError::RouteNotFound)
+            }))
             .route("/file/:id", routing::get(routes::get_file))
             .route("/files", routing::get(routes::get_all_files))
             .route("/file", routing::post(routes::post_file))
