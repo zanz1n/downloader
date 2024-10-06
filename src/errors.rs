@@ -91,8 +91,8 @@ impl HttpError {
     #[inline]
     pub fn custom_code(&self) -> u8 {
         match self {
-            HttpError::InvalidFormLength { .. } => todo!(),
-            HttpError::InvalidFormBoundary => 1,
+            HttpError::InvalidFormLength { .. } => 1,
+            HttpError::InvalidFormBoundary => 2,
             HttpError::RouteNotFound => 100,
             HttpError::ServicePanicked => 255,
         }

@@ -13,14 +13,8 @@ pub enum RepositoryError {
     NotFound(Uuid),
     #[error("the provided limit {0} is beyond the maximum of {MAX_LIMIT}")]
     LimitOutOfRange(u32),
-    #[error("sqlx error while fetching: {0}")]
-    GetFailed(sqlx::Error),
-    #[error("sqlx error while creating: {0}")]
-    CreateFailed(sqlx::Error),
-    #[error("sqlx error while updating: {0}")]
-    UpdateFailed(sqlx::Error),
-    #[error("sqlx error while deleting: {0}")]
-    DeleteFailed(sqlx::Error),
+    #[error("sqlx error: {0}")]
+    Sqlx(sqlx::Error),
 }
 
 impl RepositoryError {
@@ -29,12 +23,7 @@ impl RepositoryError {
         match self {
             RepositoryError::NotFound(..) => StatusCode::NOT_FOUND,
             RepositoryError::LimitOutOfRange(..) => StatusCode::BAD_REQUEST,
-            RepositoryError::GetFailed(..)
-            | RepositoryError::CreateFailed(..)
-            | RepositoryError::UpdateFailed(..)
-            | RepositoryError::DeleteFailed(..) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            RepositoryError::Sqlx(..) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -43,10 +32,7 @@ impl RepositoryError {
         match self {
             RepositoryError::NotFound(..) => 1,
             RepositoryError::LimitOutOfRange(..) => 2,
-            RepositoryError::GetFailed(..) => 3,
-            RepositoryError::CreateFailed(..) => 4,
-            RepositoryError::UpdateFailed(..) => 5,
-            RepositoryError::DeleteFailed(..) => 6,
+            RepositoryError::Sqlx(..) => 3,
         }
     }
 }
@@ -97,7 +83,7 @@ where
                     %error,
                     "got sqlx error while retrieving object",
                 );
-                RepositoryError::GetFailed(error)
+                RepositoryError::Sqlx(error)
             })?
             .ok_or(RepositoryError::NotFound(id))
     }
@@ -124,7 +110,7 @@ where
                 %error,
                 "got sqlx error while retrieving multiple objects",
             );
-            RepositoryError::GetFailed(error)
+            RepositoryError::Sqlx(error)
         })
     }
 
@@ -133,11 +119,10 @@ where
         id: Uuid,
         data: ObjectData,
     ) -> Result<Object, RepositoryError> {
-        let now = Utc::now();
-        let now_ms = now.timestamp_millis();
+        let now_ms = Utc::now().timestamp_millis();
 
         let size: i64 = data.size.try_into().map_err(|_| {
-            RepositoryError::CreateFailed(sqlx::Error::Decode(
+            RepositoryError::Sqlx(sqlx::Error::Decode(
                 format!("encode `size`: out of range").into(),
             ))
         })?;
@@ -159,7 +144,7 @@ where
         .await
         .map_err(|error| {
             tracing::error!(%error, "got sqlx error while creating object");
-            RepositoryError::CreateFailed(error)
+            RepositoryError::Sqlx(error)
         })
     }
 
@@ -185,7 +170,7 @@ where
         .await
         .map_err(|error| {
             tracing::error!(%error, "got sqlx error while updating object");
-            RepositoryError::UpdateFailed(error)
+            RepositoryError::Sqlx(error)
         })?
         .ok_or(RepositoryError::NotFound(id))
     }
@@ -197,7 +182,7 @@ where
             .await
             .map_err(|error| {
                 tracing::error!(%error, "got sqlx error while deleting object");
-                RepositoryError::DeleteFailed(error)
+                RepositoryError::Sqlx(error)
             })?
             .ok_or(RepositoryError::NotFound(id))
     }
