@@ -1,9 +1,6 @@
 use axum::http::StatusCode;
-use chrono::{DateTime, Utc};
-use sqlx::{
-    ColumnIndex, Database, Decode, Encode, Executor, FromRow, IntoArguments,
-    Pool, Row, Type,
-};
+use chrono::Utc;
+use sqlx::{Database, Encode, Executor, FromRow, IntoArguments, Pool, Type};
 use uuid::Uuid;
 
 use super::{Object, ObjectData};
@@ -70,71 +67,6 @@ impl<DB: Database> Clone for ObjectRepository<DB> {
 impl<DB: Database> ObjectRepository<DB> {
     pub fn new(db: Pool<DB>) -> ObjectRepository<DB> {
         ObjectRepository { db }
-    }
-}
-
-impl<'r, R: Row> FromRow<'r, R> for Object
-where
-    &'r str: ColumnIndex<R>,
-
-    Vec<u8>: Decode<'r, R::Database>,
-    Vec<u8>: Type<R::Database>,
-
-    i64: Decode<'r, R::Database>,
-    i64: Type<R::Database>,
-
-    String: Decode<'r, R::Database>,
-    String: Type<R::Database>,
-{
-    fn from_row(row: &'r R) -> Result<Self, sqlx::Error> {
-        let id: Vec<u8> = row.try_get("id")?;
-        let id: [u8; 16] = id.try_into().map_err(|_| {
-            sqlx::Error::Decode("parse `id` uuid out of range".into())
-        })?;
-        let id = Uuid::from_bytes(id);
-
-        let created_at: i64 = row.try_get("created_at")?;
-        let created_at = DateTime::from_timestamp_millis(created_at)
-            .ok_or_else(|| {
-                sqlx::Error::Decode(
-                    "parse `created_at` field gone wrong".into(),
-                )
-            })?;
-
-        let updated_at: i64 = row.try_get("updated_at")?;
-        let updated_at = DateTime::from_timestamp_millis(updated_at)
-            .ok_or_else(|| {
-                sqlx::Error::Decode(
-                    "parse `updated_at` field gone wrong".into(),
-                )
-            })?;
-
-        let name: String = row.try_get("name")?;
-        let mime_type: String = row.try_get("mime_type")?;
-
-        let size: i64 = row.try_get("size")?;
-        let size = size.try_into().map_err(|err| {
-            sqlx::Error::Decode(format!("parse `size`: {err}").into())
-        })?;
-
-        let checksum_256: Vec<u8> = row.try_get("checksum_256")?;
-        let checksum_256: [u8; 32] = checksum_256.try_into().map_err(|_| {
-            sqlx::Error::Decode(
-                "parse `checksum_256` array out of range".into(),
-            )
-        })?;
-
-        Ok(Self {
-            id,
-            created_at,
-            updated_at,
-            data: ObjectData {
-                name,
-                mime_type,
-                size,
-                checksum_256,
-            },
-        })
     }
 }
 
