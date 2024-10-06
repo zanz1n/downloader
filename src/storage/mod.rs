@@ -7,6 +7,7 @@ pub mod repository;
 pub mod routes;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Object {
     pub id: Uuid,
     pub created_at: DateTime<Utc>,
@@ -15,6 +16,7 @@ pub struct Object {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ObjectData {
     pub name: String,
     pub mime_type: String,

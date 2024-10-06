@@ -24,11 +24,13 @@ use crate::{
 use super::{manager::ObjectManager, repository::ObjectRepository, Object};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PostFileData {
     pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PaginationData {
     #[serde(default = "default_pagination_limit")]
     pub limit: u32,
