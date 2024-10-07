@@ -161,16 +161,16 @@ impl ObjectManager {
         let path = self.data_dir.join(&id);
 
         let file = File::open(&path).await.map_err(|error| {
-            tracing::error!(
-                target: "object_fs",
-                %error,
-                took = %fmt_since(start),
-                path = ?path,
-                "open file failed",
-            );
             if error.kind() == ErrorKind::NotFound {
                 ObjectError::NotFound
             } else {
+                tracing::error!(
+                    target: "object_fs",
+                    %error,
+                    took = %fmt_since(start),
+                    path = ?path,
+                    "open file failed",
+                );
                 ObjectError::IoError(error)
             }
         })?;
