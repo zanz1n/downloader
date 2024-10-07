@@ -19,8 +19,11 @@ toml = "0.8"
 
 uuid = { version = "1.10", features = ["v4", "fast-rng", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
-sha2 = "0.10"
 hex = "0.4"
+bitflags = { version = "2.6", features = ["serde"] }
+
+sha2 = "0.10"
+bcrypt = "0.15"
 
 clap = { version = "4.5", features = ["derive"] }
 thiserror = { version = "1.0" }

@@ -13,10 +13,12 @@ use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
 use utils::sys::shutdown_signal;
 
+mod auth;
 mod config;
 mod errors;
 mod server;
 mod storage;
+mod user;
 mod utils;
 
 async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
