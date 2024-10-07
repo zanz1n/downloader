@@ -6,7 +6,10 @@ use axum::{
 };
 use serde::Serialize;
 
-use crate::storage::{manager::ObjectError, repository::RepositoryError};
+use crate::{
+    storage::{manager::ObjectError, repository::RepositoryError},
+    user::UserError,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum DownloaderError {
@@ -14,6 +17,9 @@ pub enum DownloaderError {
     Repository(#[from] RepositoryError),
     #[error("Storage error: {0}")]
     Object(#[from] ObjectError),
+    #[error("User error: {0}")]
+    User(#[from] UserError),
+
     #[error("Http error: {0}")]
     Http(#[from] HttpError),
 
@@ -33,6 +39,7 @@ impl DownloaderError {
             DownloaderError::Repository(e) => e.status_code(),
             DownloaderError::Object(e) => e.status_code(),
             DownloaderError::Http(e) => e.status_code(),
+            DownloaderError::User(e) => e.status_code(),
             DownloaderError::AxumHttp(..) => StatusCode::INTERNAL_SERVER_ERROR,
             DownloaderError::Multipart(e) => e.status(),
             DownloaderError::Other(.., code) => *code,
@@ -43,6 +50,7 @@ impl DownloaderError {
         let ic = match self {
             DownloaderError::Repository(e) => e.custom_code(),
             DownloaderError::Object(e) => e.custom_code(),
+            DownloaderError::User(e) => e.custom_code(),
             DownloaderError::Http(e) => e.custom_code(),
             DownloaderError::AxumHttp(..) => 0,
             DownloaderError::Multipart(..) => 0,
@@ -52,7 +60,8 @@ impl DownloaderError {
         let c = match self {
             DownloaderError::Repository(..) => 1,
             DownloaderError::Object(..) => 2,
-            DownloaderError::Http(..) => 3,
+            DownloaderError::User(..) => 3,
+            DownloaderError::Http(..) => 99,
             DownloaderError::AxumHttp(..) => 100,
             DownloaderError::Multipart(..) => 101,
             DownloaderError::Other(..) => 0,
