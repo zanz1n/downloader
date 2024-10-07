@@ -2,6 +2,7 @@
 
 CREATE TABLE object (
     id blob PRIMARY KEY,
+    user_id blob NOT NULL,
     created_at integer NOT NULL,
     updated_at integer NOT NULL,
     name text NOT NULL,
@@ -9,3 +10,5 @@ CREATE TABLE object (
     size integer NOT NULL,
     checksum_256 blob NOT NULL
 ) STRICT;
+
+CREATE UNIQUE INDEX object_user_id_idx ON object(user_id);

@@ -64,8 +64,8 @@ where
 
     for<'r> Object: FromRow<'r, DB::Row>,
 
-    for<'e> Vec<u8>: Encode<'e, DB>,
-    for<'e> Vec<u8>: Type<DB>,
+    for<'e> &'e [u8]: Encode<'e, DB>,
+    for<'e> &'e [u8]: Type<DB>,
 
     for<'e> i64: Encode<'e, DB>,
     i64: Type<DB>,
@@ -75,7 +75,7 @@ where
 {
     pub async fn get(&self, id: Uuid) -> Result<Object, RepositoryError> {
         sqlx::query_as("SELECT * FROM object WHERE id = $1")
-            .bind(id.into_bytes().to_vec())
+            .bind(id.into_bytes().as_slice())
             .fetch_optional(&self.db)
             .await
             .map_err(|error| {
@@ -117,6 +117,7 @@ where
     pub async fn create(
         &self,
         id: Uuid,
+        user_id: Uuid,
         data: ObjectData,
     ) -> Result<Object, RepositoryError> {
         let now_ms = Utc::now().timestamp_millis();
@@ -129,17 +130,18 @@ where
 
         sqlx::query_as(
             "INSERT INTO object \
-            (id, created_at, updated_at, name, mime_type, size, checksum_256) \
-            VALUES ($1, $2, $3, $4, $5, $6, $7) \
+            (id, user_id, created_at, updated_at, name, mime_type, size, checksum_256) \
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) \
             RETURNING *",
         )
-        .bind(id.into_bytes().to_vec())
+        .bind(id.into_bytes().as_slice())
+        .bind(user_id.into_bytes().as_slice())
         .bind(now_ms)
         .bind(now_ms)
         .bind(data.name)
         .bind(data.mime_type)
         .bind(size)
-        .bind(data.checksum_256.to_vec())
+        .bind(data.checksum_256.as_slice())
         .fetch_one(&self.db)
         .await
         .map_err(|error| {
@@ -164,8 +166,8 @@ where
         .bind(now_ms)
         .bind(data.name)
         .bind(data.mime_type)
-        .bind(data.checksum_256.to_vec())
-        .bind(id.into_bytes().to_vec())
+        .bind(data.checksum_256.as_slice())
+        .bind(id.into_bytes().as_slice())
         .fetch_optional(&self.db)
         .await
         .map_err(|error| {
@@ -177,7 +179,7 @@ where
 
     pub async fn delete(&self, id: Uuid) -> Result<Object, RepositoryError> {
         sqlx::query_as("DELETE FROM object WHERE id = $1 RETURNING *")
-            .bind(id.into_bytes().to_vec())
+            .bind(id.into_bytes().as_slice())
             .fetch_optional(&self.db)
             .await
             .map_err(|error| {
@@ -231,7 +233,7 @@ mod tests {
             let data = rand_data();
 
             datas.push((id, data.clone()));
-            repo.create(id, data).await.unwrap();
+            repo.create(id, Uuid::new_v4(), data).await.unwrap();
         }
 
         let all_data = repo.get_all(SIZE as u32, 0).await.unwrap();
@@ -255,7 +257,7 @@ mod tests {
             let data = rand_data();
 
             datas.push((id, data.clone()));
-            repo.create(id, data).await.unwrap();
+            repo.create(id, Uuid::new_v4(), data).await.unwrap();
         }
 
         let mut all_data = Vec::new();
@@ -281,11 +283,20 @@ mod tests {
 
         let data = rand_data();
 
-        let obj = repo.create(Uuid::new_v4(), data.clone()).await.unwrap();
-        assert_eq!(data, obj.data, "created data mismatches the provided one");
+        let id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
 
-        let obj = repo.get(obj.id).await.unwrap();
-        assert_eq!(data, obj.data, "fetched data mismatches the created one");
+        let old_obj = repo.create(id, user_id, data.clone()).await.unwrap();
+        assert_eq!(
+            data, old_obj.data,
+            "created data mismatches the provided one",
+        );
+
+        assert_eq!(old_obj.id, id);
+        assert_eq!(old_obj.user_id, user_id);
+
+        let obj = repo.get(old_obj.id).await.unwrap();
+        assert_eq!(obj, old_obj, "fetched data mismatches the created one");
     }
 
     #[test(tokio::test)]
@@ -293,14 +304,26 @@ mod tests {
         let repo = repository().await;
 
         let data = rand_data();
-        let obj = repo.create(Uuid::new_v4(), rand_data()).await.unwrap();
+        let obj = repo
+            .create(Uuid::new_v4(), Uuid::new_v4(), rand_data())
+            .await
+            .unwrap();
         let id = obj.id;
 
+        let mut old_obj = obj.clone();
+
         let obj = repo.update(obj.id, data.clone()).await.unwrap();
-        assert_eq!(data, obj.data, "updated data mismatches the provided one");
+        assert!(
+            obj.updated_at > old_obj.updated_at,
+            "updated_at field not changed",
+        );
+        old_obj.updated_at = obj.updated_at;
+        old_obj.data = data;
+
+        assert_eq!(obj, old_obj, "updated data mismatches the provided one");
 
         let obj = repo.get(id).await.unwrap();
-        assert_eq!(data, obj.data, "fetched data mismatches the updated one");
+        assert_eq!(obj, old_obj, "fetched data mismatches the updated one");
     }
 
     #[test(tokio::test)]
@@ -315,7 +338,7 @@ mod tests {
         );
 
         let data = rand_data();
-        repo.create(id, data.clone()).await.unwrap();
+        repo.create(id, Uuid::new_v4(), data.clone()).await.unwrap();
 
         let obj = repo.delete(id).await.unwrap();
         assert_eq!(data, obj.data, "fetched data mismatches the created one");

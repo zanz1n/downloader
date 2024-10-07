@@ -240,7 +240,7 @@ async fn post_file_internal(
         checksum_256,
     };
 
-    match repo.create(id, data).await {
+    match repo.create(id, Uuid::nil(), data).await {
         Ok(v) => Ok(v),
         Err(error) => {
             tracing::error!(

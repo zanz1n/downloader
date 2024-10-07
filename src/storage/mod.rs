@@ -11,6 +11,7 @@ pub mod routes;
 #[serde(deny_unknown_fields)]
 pub struct Object {
     pub id: Uuid,
+    pub user_id: Uuid,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub data: ObjectData,
@@ -35,6 +36,12 @@ where
             sqlx::Error::Decode("parse `id` uuid out of range".into())
         })?;
         let id = Uuid::from_bytes(id);
+
+        let user_id: Vec<u8> = row.try_get("user_id")?;
+        let user_id: [u8; 16] = user_id.try_into().map_err(|_| {
+            sqlx::Error::Decode("parse `user_id` uuid out of range".into())
+        })?;
+        let user_id = Uuid::from_bytes(user_id);
 
         let created_at: i64 = row.try_get("created_at")?;
         let created_at = DateTime::from_timestamp_millis(created_at)
@@ -69,6 +76,7 @@ where
 
         Ok(Self {
             id,
+            user_id,
             created_at,
             updated_at,
             data: ObjectData {
