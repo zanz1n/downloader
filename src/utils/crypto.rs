@@ -1,7 +1,9 @@
 use std::task::Poll;
 
+use jsonwebtoken::{DecodingKey, EncodingKey};
 use pin_project_lite::pin_project;
 use sha2::{digest::Output, Digest};
+use sqlx::error::BoxDynError;
 use tokio::io::AsyncRead;
 
 pin_project! {
@@ -54,4 +56,17 @@ impl<T: AsyncRead, H: Digest> AsyncRead for HashRead<T, H> {
             }
         }
     }
+}
+
+pub async fn fetch_jwt_key_files(
+    public_key: String,
+    private_key: String,
+) -> Result<(DecodingKey, EncodingKey), BoxDynError> {
+    let public_key = tokio::fs::read(public_key).await?;
+    let public_key = DecodingKey::from_ed_pem(&public_key)?;
+
+    let private_key = tokio::fs::read(private_key).await?;
+    let private_key = EncodingKey::from_ed_pem(&private_key)?;
+
+    Ok((public_key, private_key))
 }
