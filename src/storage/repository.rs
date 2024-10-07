@@ -307,17 +307,23 @@ mod tests {
     async fn test_delete() {
         let repo = repository().await;
 
+        let id = Uuid::new_v4();
+        let res = repo.delete(id).await;
+        assert!(
+            matches!(res, Err(RepositoryError::NotFound(id2)) if id2 == id),
+            "expected not found error while deleting non existent object",
+        );
+
         let data = rand_data();
-        let obj = repo.create(Uuid::new_v4(), data.clone()).await.unwrap();
-        let id = obj.id;
+        repo.create(id, data.clone()).await.unwrap();
 
         let obj = repo.delete(id).await.unwrap();
-        assert_eq!(data, obj.data, "updated data mismatches the provided one");
+        assert_eq!(data, obj.data, "fetched data mismatches the created one");
 
         let res = repo.get(id).await;
         assert!(
             matches!(res, Err(RepositoryError::NotFound(id2)) if id2 == id),
-            "expected `ObjectError::NotFound` while fetchings deleted object",
+            "expected `ObjectError::NotFound` while fetching deleted object",
         )
     }
 }
