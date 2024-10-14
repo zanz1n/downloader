@@ -16,6 +16,7 @@ use tracing::Instrument;
 use uuid::Uuid;
 
 use crate::{
+    auth::{axum::Authorization, AuthError, Token},
     errors::{DownloaderError, HttpError},
     storage::ObjectData,
     utils::extractors::{Json, Query},
@@ -47,11 +48,24 @@ const fn default_pagination_offset() -> u32 {
 }
 
 pub async fn get_file(
+    Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
     Path(id): Path<Uuid>,
 ) -> Result<Response, DownloaderError> {
     let object = repo.get(id).await?;
+
+    let can_access = token.can_read_all()
+        || (object.user_id
+            == match token {
+                Token::User(user_token) => user_token.user_id,
+                _ => Uuid::nil(),
+            });
+
+    if !can_access {
+        return Err(AuthError::AccessDenied.into());
+    }
+
     let reader = manager.fetch(id).await?;
 
     Response::builder()
@@ -66,9 +80,14 @@ pub async fn get_file(
 }
 
 pub async fn get_all_files(
+    Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Query(data): Query<PaginationData>,
 ) -> Result<Json<Vec<Object>>, DownloaderError> {
+    if !token.can_read_all() {
+        return Err(AuthError::AccessDenied.into());
+    }
+
     repo.get_all(data.limit, data.offset)
         .await
         .map(Json)
@@ -76,6 +95,7 @@ pub async fn get_all_files(
 }
 
 pub async fn post_file(
+    Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
     Query(PostFileData { name }): Query<PostFileData>,
@@ -84,12 +104,13 @@ pub async fn post_file(
     let (reader, mime_type) = extract_request_body_file(req).await;
     // pin_mut!(reader);
 
-    post_file_internal(repo, manager, reader, name, mime_type)
+    post_file_internal(token, repo, manager, reader, name, mime_type)
         .await
         .map(Json)
 }
 
 pub async fn post_file_multipart(
+    Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
     mut multipart: Multipart,
@@ -98,16 +119,37 @@ pub async fn post_file_multipart(
         extract_multipart_file(&mut multipart).await?;
     // pin_mut!(reader);
 
-    post_file_internal(repo, manager, reader, name, mime_type)
+    post_file_internal(token, repo, manager, reader, name, mime_type)
         .await
         .map(Json)
 }
 
 pub async fn delete_file(
+    Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Object>, DownloaderError> {
+    // Placed before to avoid unecessary database queries in case the
+    // write permission is missing
+    if !token.can_write_owned() {
+        return Err(AuthError::AccessDenied.into());
+    }
+
+    let can_access = match &token {
+        Token::User(user_token) => {
+            let obj = repo.get(id).await?;
+
+            obj.user_id == user_token.user_id || token.can_write_all()
+        }
+        Token::File(file_token) => file_token.file_id == id,
+        Token::Server => true,
+    };
+
+    if !can_access {
+        return Err(AuthError::AccessDenied.into());
+    }
+
     let obj = repo.delete(id).await?;
 
     tokio::spawn(async move {
@@ -124,6 +166,7 @@ pub async fn delete_file(
 }
 
 pub async fn update_file(
+    Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
     Path(id): Path<Uuid>,
@@ -133,12 +176,13 @@ pub async fn update_file(
     let (reader, mime_type) = extract_request_body_file(req).await;
     // pin_mut!(reader);
 
-    update_file_internal(repo, manager, id, reader, name, mime_type)
+    update_file_internal(token, repo, manager, id, reader, name, mime_type)
         .await
         .map(Json)
 }
 
 pub async fn update_file_multipart(
+    Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
     Path(id): Path<Uuid>,
@@ -148,7 +192,7 @@ pub async fn update_file_multipart(
         extract_multipart_file(&mut multipart).await?;
     // pin_mut!(reader);
 
-    update_file_internal(repo, manager, id, reader, name, mime_type)
+    update_file_internal(token, repo, manager, id, reader, name, mime_type)
         .await
         .map(Json)
 }
@@ -224,12 +268,21 @@ async fn extract_request_body_file(
 }
 
 async fn post_file_internal(
+    token: Token,
     repo: ObjectRepository<Sqlite>,
     manager: Arc<ObjectManager>,
     reader: impl AsyncRead + Unpin,
     name: String,
     mime_type: String,
 ) -> Result<Object, DownloaderError> {
+    if !token.can_write_owned() {
+        return Err(AuthError::AccessDenied.into());
+    }
+    let token = match token {
+        Token::User(user_token) => user_token,
+        _ => return Err(AuthError::AccessDenied.into()),
+    };
+
     let id = Uuid::new_v4();
     let (size, checksum_256) = manager.store(id, reader).await?;
 
@@ -240,7 +293,7 @@ async fn post_file_internal(
         checksum_256,
     };
 
-    match repo.create(id, Uuid::nil(), data).await {
+    match repo.create(id, token.user_id, data).await {
         Ok(v) => Ok(v),
         Err(error) => {
             tracing::error!(
@@ -265,6 +318,7 @@ async fn post_file_internal(
 }
 
 async fn update_file_internal(
+    token: Token,
     repo: ObjectRepository<Sqlite>,
     manager: Arc<ObjectManager>,
     id: Uuid,
@@ -272,6 +326,26 @@ async fn update_file_internal(
     name: String,
     mime_type: String,
 ) -> Result<Object, DownloaderError> {
+    // Placed before to avoid unecessary database queries in case the
+    // write permission is missing
+    if !token.can_write_owned() {
+        return Err(AuthError::AccessDenied.into());
+    }
+
+    let can_access = match &token {
+        Token::User(user_token) => {
+            let obj = repo.get(id).await?;
+
+            obj.user_id == user_token.user_id || token.can_write_all()
+        }
+        Token::File(file_token) => file_token.file_id == id,
+        Token::Server => true,
+    };
+
+    if !can_access {
+        return Err(AuthError::AccessDenied.into());
+    }
+
     let (size, checksum_256) = manager.store(id, reader).await?;
 
     repo.update(
