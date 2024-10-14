@@ -47,6 +47,27 @@ const fn default_pagination_offset() -> u32 {
     0
 }
 
+pub async fn get_file_information(
+    Authorization(token): Authorization,
+    Extension(repo): Extension<ObjectRepository<Sqlite>>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Object>, DownloaderError> {
+    let object = repo.get(id).await?;
+
+    let can_access = token.can_read_all()
+        || (object.user_id
+            == match token {
+                Token::User(user_token) => user_token.user_id,
+                _ => Uuid::nil(),
+            });
+
+    if !can_access {
+        return Err(AuthError::AccessDenied.into());
+    }
+
+    Ok(Json(object))
+}
+
 pub async fn get_file(
     Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,

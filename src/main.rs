@@ -41,6 +41,7 @@ async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
             .fallback(routing::get(|| async {
                 DownloaderError::Http(HttpError::RouteNotFound)
             }))
+            .route("/file-info/:id", routing::get(routes::get_file_information))
             .route("/file/:id", routing::get(routes::get_file))
             .route("/files", routing::get(routes::get_all_files))
             .route("/file", routing::post(routes::post_file))
