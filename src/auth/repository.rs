@@ -113,7 +113,7 @@ impl TokenRepository {
             .map_err(|_| AuthError::InvalidToken)?;
 
         if vec.len() != self.srv_secret.len() {
-            return Err(AuthError::InvalidToken);
+            return Ok(false);
         }
 
         let eq = vec.iter().eq(&self.srv_secret);
@@ -188,7 +188,7 @@ mod tests {
 
         let data = match data {
             Token::User(v) => v,
-            Token::File(_) => panic!("decoded wrong token type"),
+            _ => panic!("decoded wrong token type"),
         };
 
         assert_eq!(data.issuer, "SRV");
@@ -224,8 +224,8 @@ mod tests {
             .expect("failed to decode generated token");
 
         let data = match data {
-            Token::User(_) => panic!("decoded wrong token type"),
             Token::File(v) => v,
+            _ => panic!("decoded wrong token type"),
         };
 
         assert_eq!(data.issuer, issuer);

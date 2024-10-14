@@ -1,10 +1,12 @@
 use std::time::Duration;
 
+use ::axum::http::StatusCode;
 use bitflags::bitflags;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub mod axum;
 pub mod repository;
 
 #[derive(Debug, thiserror::Error)]
@@ -20,6 +22,50 @@ pub enum AuthError {
     ExpiredToken,
     #[error("the provided token must be used in the future")]
     ImatureToken,
+
+    #[error("authorization is required but no one was provided")]
+    AuthorizationRequired,
+    #[error("the provided Authorization header is invalid")]
+    InvalidAuthHeader,
+    #[error(
+        "the provided authorization strategy `{0}` is invalid, expected: {1:?}"
+    )]
+    InvalidAuthStrategy(String, &'static [&'static str]),
+
+    #[error("access denied to the requested entity")]
+    AccessDenied,
+}
+
+impl AuthError {
+    #[inline]
+    pub fn status_code(&self) -> StatusCode {
+        match self {
+            AuthError::GenerateTokenFailed => StatusCode::INTERNAL_SERVER_ERROR,
+            AuthError::TokenExpirationTooLong { .. } => StatusCode::BAD_REQUEST,
+            AuthError::InvalidToken
+            | AuthError::ExpiredToken
+            | AuthError::ImatureToken => StatusCode::UNAUTHORIZED,
+            AuthError::AuthorizationRequired
+            | AuthError::InvalidAuthHeader
+            | AuthError::InvalidAuthStrategy(..) => StatusCode::BAD_REQUEST,
+            AuthError::AccessDenied => StatusCode::FORBIDDEN,
+        }
+    }
+
+    #[inline]
+    pub fn custom_code(&self) -> u8 {
+        match self {
+            AuthError::GenerateTokenFailed => 1,
+            AuthError::TokenExpirationTooLong { .. } => 2,
+            AuthError::InvalidToken => 3,
+            AuthError::ExpiredToken => 4,
+            AuthError::ImatureToken => 5,
+            AuthError::AuthorizationRequired => 6,
+            AuthError::InvalidAuthHeader => 7,
+            AuthError::InvalidAuthStrategy(..) => 8,
+            AuthError::AccessDenied => 9,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +73,7 @@ pub enum AuthError {
 pub enum Token {
     User(UserToken),
     File(FileToken),
+    Server,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,6 +119,7 @@ impl Token {
         match self {
             Token::User(p) => p.permission,
             Token::File(p) => p.permission,
+            Token::Server => Permission::all(),
         }
     }
 
