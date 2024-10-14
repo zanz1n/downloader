@@ -119,10 +119,15 @@ impl TokenRepository {
         let eq = vec.iter().eq(&self.srv_secret);
         Ok(eq)
     }
+
+    pub fn get_srv_key(&self) -> String {
+        base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(&self.srv_secret)
+    }
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use std::time::Duration;
 
     use base64::Engine;
@@ -147,7 +152,7 @@ mod tests {
         base64::engine::general_purpose::STANDARD.encode(rand_vec(24))
     }
 
-    fn repository() -> TokenRepository {
+    pub fn repository() -> TokenRepository {
         let key = rand_vec(512);
         let srv_secret = rand_vec(128);
 

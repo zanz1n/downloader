@@ -49,8 +49,8 @@ impl<S: Send + Sync> FromRequestParts<S> for Authorization {
             ("Bearer", token)
         };
 
-        let repo =
-            parts.extensions.get::<TokenRepository>().ok_or_else(|| {
+        let repo = parts.extensions.get::<Arc<TokenRepository>>().ok_or_else(
+            || {
                 DownloaderError::Other(
                     format!(
                         "Extension of type `{}` was not found. \
@@ -59,7 +59,8 @@ impl<S: Send + Sync> FromRequestParts<S> for Authorization {
                     ),
                     StatusCode::INTERNAL_SERVER_ERROR,
                 )
-            })?;
+            },
+        )?;
 
         match strategy {
             "Bearer" => repo.decode_token(&token),
@@ -80,5 +81,96 @@ impl<S: Send + Sync> FromRequestParts<S> for Authorization {
         }
         .map(Authorization)
         .map_err(DownloaderError::Auth)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use axum::{
+        extract::FromRequestParts,
+        http::{header, request::Builder, Request},
+    };
+    use test_log::test;
+    use uuid::Uuid;
+
+    use crate::auth::{
+        axum::Authorization, repository::tests::repository, Permission, Token,
+    };
+
+    async fn test_requests_insertions<F: FnOnce(Builder, String) -> Builder>(
+        f: F,
+    ) {
+        let repo = Arc::new(repository());
+
+        let user_id = Uuid::new_v4();
+        let permission = Permission::all();
+        let username = Uuid::new_v4().to_string();
+
+        let token = repo
+            .generate_user_token(user_id, permission, username.clone())
+            .unwrap();
+
+        let mut parts = f(Request::builder().extension(repo.clone()), token)
+            .body(())
+            .unwrap()
+            .into_parts()
+            .0;
+
+        let token = Authorization::from_request_parts(&mut parts, &())
+            .await
+            .expect("Failed to extract created token")
+            .0;
+
+        let token = match token {
+            Token::User(user_token) => user_token,
+            _ => panic!("expected user token, but got {token:?}"),
+        };
+
+        assert_eq!(token.user_id, user_id);
+        assert_eq!(token.permission, permission);
+        assert_eq!(token.username, username);
+    }
+
+    #[test(tokio::test)]
+    async fn test_header_bearer_token() {
+        test_requests_insertions(|builder, token| {
+            builder.header(header::AUTHORIZATION, format!("Bearer {token}"))
+        })
+        .await
+    }
+
+    #[test(tokio::test)]
+    async fn test_query_bearer_token() {
+        test_requests_insertions(|builder, token| {
+            builder.uri(format!("https://example.com?token={token}"))
+        })
+        .await
+    }
+
+    #[test(tokio::test)]
+    async fn test_header_server_key() {
+        let repo = Arc::new(repository());
+
+        let token = repo.get_srv_key();
+
+        let mut parts = Request::builder()
+            .extension(repo.clone())
+            .header(header::AUTHORIZATION, format!("Secret {token}"))
+            .body(())
+            .unwrap()
+            .into_parts()
+            .0;
+
+        let token = Authorization::from_request_parts(&mut parts, &())
+            .await
+            .expect("Failed to extract created token")
+            .0;
+
+        match token {
+            Token::Server => {}
+            _ => panic!("expected server token, but got {token:?}"),
+        }
     }
 }
