@@ -108,7 +108,7 @@ impl TokenRepository {
     }
 
     pub fn verify_srv_key(&self, token: &str) -> Result<bool, AuthError> {
-        let vec = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        let vec = base64::prelude::BASE64_STANDARD
             .decode(token)
             .map_err(|_| AuthError::InvalidToken)?;
 
@@ -121,8 +121,7 @@ impl TokenRepository {
     }
 
     pub fn get_srv_key(&self) -> String {
-        base64::engine::general_purpose::URL_SAFE_NO_PAD
-            .encode(&self.srv_secret)
+        base64::prelude::BASE64_STANDARD.encode(&self.srv_secret)
     }
 }
 

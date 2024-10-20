@@ -190,7 +190,7 @@ pub mod duration_secs {
 }
 
 pub mod base64 {
-    use base64::{prelude::BASE64_STANDARD_NO_PAD as BASE64, Engine};
+    use base64::{prelude::BASE64_STANDARD as BASE64, Engine};
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     #[inline]
