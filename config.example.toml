@@ -18,4 +18,12 @@ temp_dir = "/tmp/downloader"
 [auth]
 token_cert = "/var/lib/downloader/certs/jwt-cert.pem"
 token_key = "/var/lib/downloader/certs/jwt-key.pem"
+
+# Don't uncomment if you want to keep the default values
+
+# token_duration = 3600 # 1 hour (default)
+# max_token_duration = 604800 # 7 days (default)
+
+# password_hash_cost = 12 # 12 (default)
+
 secret_key = "PHJhbmRvbSBiYXNlNjQ+Cg=="

@@ -1,13 +1,14 @@
 use std::{
     fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    time::Duration,
 };
 
 use clap::Parser;
 use serde::{Deserialize, Serialize};
 
 use crate::utils::serde::{
-    deserialize_socket_addr, ResolvedFile, ResolvedPath,
+    base64, deserialize_socket_addr, duration_secs, ResolvedFile, ResolvedPath,
 };
 
 pub const DEFAULT_HTTP_ADDR: SocketAddr =
@@ -89,8 +90,16 @@ pub struct StorageConfig {
 pub struct AuthConfig {
     pub token_cert: ResolvedFile,
     pub token_key: ResolvedFile,
+    #[serde(with = "duration_secs", default = "default_token_duration")]
+    pub token_duration: Duration,
+    #[serde(with = "duration_secs", default = "default_max_token_duration")]
+    pub max_token_duration: Duration,
 
-    pub secret_key: String,
+    #[serde(with = "base64")]
+    pub secret_key: Vec<u8>,
+
+    #[serde(default = "default_password_hash_cost")]
+    pub password_hash_cost: u32,
 }
 
 const fn default_false() -> bool {
@@ -107,6 +116,18 @@ const fn default_http_addr() -> SocketAddr {
 
 const fn default_tcp_addr() -> SocketAddr {
     DEFAULT_TCP_ADDR
+}
+
+const fn default_token_duration() -> Duration {
+    Duration::from_secs(3600)
+}
+
+const fn default_max_token_duration() -> Duration {
+    Duration::from_secs(7 * 24 * 3600)
+}
+
+const fn default_password_hash_cost() -> u32 {
+    bcrypt::DEFAULT_COST
 }
 
 fn default_temp_dir() -> ResolvedPath {
