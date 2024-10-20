@@ -1,0 +1,11 @@
+services:
+  downloader:
+    build: .
+    restart: always
+
+    ports:
+      - 8080:8080
+
+    volumes:
+      - ./config.toml:/etc/downloader/config.toml
+      - ./data:/data
