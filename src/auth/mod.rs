@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 pub mod axum;
 pub mod repository;
+pub mod routes;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
@@ -34,6 +35,8 @@ pub enum AuthError {
 
     #[error("access denied to the requested entity")]
     AccessDenied,
+    #[error("you can not create a token with a permission higher than yours")]
+    HigherPermissionRequired,
 }
 
 impl AuthError {
@@ -49,6 +52,7 @@ impl AuthError {
             | AuthError::InvalidAuthHeader
             | AuthError::InvalidAuthStrategy(..) => StatusCode::BAD_REQUEST,
             AuthError::AccessDenied => StatusCode::FORBIDDEN,
+            AuthError::HigherPermissionRequired => StatusCode::FORBIDDEN,
         }
     }
 
@@ -64,6 +68,7 @@ impl AuthError {
             AuthError::InvalidAuthHeader => 7,
             AuthError::InvalidAuthStrategy(..) => 8,
             AuthError::AccessDenied => 9,
+            AuthError::HigherPermissionRequired => 10,
         }
     }
 }
