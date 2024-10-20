@@ -1,4 +1,7 @@
 {
+	"rust-analyzer.cargo.features": [
+        "full"
+    ],
 	"prettier.documentSelectors": [
 		"**/*.svelte"
 	],
