@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { page } from "$app/stores";
 
     let message = $page.error?.message ?? "Unknown";
