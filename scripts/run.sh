@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cargo run -- --config-path config.toml $@
+cargo run --features full -- --config-path config.toml $@
