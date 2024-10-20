@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
-use axum::{extract::Path, Extension};
+use axum::{extract::Path, routing, Extension, Router};
 use serde::{Deserialize, Serialize};
 use sqlx::Sqlite;
 use uuid::Uuid;
@@ -16,6 +16,16 @@ use super::{
     axum::Authorization, repository::TokenRepository, AuthError, Permission,
     Token,
 };
+
+pub fn auth_routes<S>(router: Router<S>) -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+{
+    router
+        .route("/login", routing::post(login))
+        .route("/signup", routing::post(signup))
+        .route("/token", routing::post(generate_file_token))
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -58,7 +68,7 @@ pub struct FileTokenResponseData {
 }
 
 pub async fn login(
-    Extension(token_repo): Extension<TokenRepository>,
+    Extension(token_repo): Extension<Arc<TokenRepository>>,
     Extension(user_repo): Extension<UserRepository<Sqlite>>,
     Json(data): Json<LoginRequestData>,
 ) -> Result<Json<LoginResponseData>, DownloaderError> {
@@ -85,7 +95,7 @@ pub async fn login(
 
 pub async fn signup(
     Authorization(token): Authorization,
-    Extension(token_repo): Extension<TokenRepository>,
+    Extension(token_repo): Extension<Arc<TokenRepository>>,
     Extension(user_repo): Extension<UserRepository<Sqlite>>,
     Json(data): Json<LoginRequestData>,
 ) -> Result<Json<LoginResponseData>, DownloaderError> {
@@ -108,7 +118,7 @@ pub async fn signup(
 
 pub async fn generate_file_token(
     Authorization(token): Authorization,
-    Extension(token_repo): Extension<TokenRepository>,
+    Extension(token_repo): Extension<Arc<TokenRepository>>,
     Extension(obj_repo): Extension<ObjectRepository<Sqlite>>,
     Path(id): Path<Uuid>,
     Json(data): Json<FileTokenRequestData>,

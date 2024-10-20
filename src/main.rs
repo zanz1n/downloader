@@ -1,17 +1,21 @@
 use std::{error::Error, io::ErrorKind, path::Path, sync::Arc};
 
-use axum::{routing, Extension, Router};
+use auth::{repository::TokenRepository, routes::auth_routes};
+use axum::{Extension, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
 use config::{Args, Config};
-use errors::{DownloaderError, HttpError};
-use server::layer_router;
+use jsonwebtoken::Algorithm;
+use server::layer_root_router;
 use sqlx::{migrate, SqlitePool};
-use storage::{manager::ObjectManager, repository::ObjectRepository, routes};
+use storage::{
+    manager::ObjectManager, repository::ObjectRepository, routes::file_routes,
+};
 use tokio::{runtime::Builder, select};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
-use utils::sys::shutdown_signal;
+use user::repository::UserRepository;
+use utils::{crypto::fetch_jwt_key_files, sys::shutdown_signal};
 
 mod auth;
 mod config;
@@ -34,30 +38,32 @@ async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
     .await?;
     migrate!().run(&db).await?;
 
-    let repository = ObjectRepository::new(db);
+    let obj_repo = ObjectRepository::new(db.clone());
+    let user_repo = UserRepository::new(db, cfg.auth.password_hash_cost);
 
-    let app = layer_router(
-        Router::new()
-            .fallback(routing::get(|| async {
-                DownloaderError::Http(HttpError::RouteNotFound)
-            }))
-            .route("/file-info/:id", routing::get(routes::get_file_information))
-            .route("/file/:id", routing::get(routes::get_file))
-            .route("/files", routing::get(routes::get_all_files))
-            .route("/file", routing::post(routes::post_file))
-            .route("/file/:id", routing::delete(routes::delete_file))
-            .route("/file/:id", routing::put(routes::update_file))
-            .route(
-                "/file-multipart",
-                routing::post(routes::post_file_multipart),
-            )
-            .route(
-                "/file-multipart/:id",
-                routing::put(routes::update_file_multipart),
-            )
-            .layer(Extension(repository))
-            .layer(Extension(Arc::new(manager))),
+    let (enc_key, dec_key) =
+        fetch_jwt_key_files(&cfg.auth.token_cert, &cfg.auth.token_key)
+            .await
+            .map_err(|e| format!("failed to get jwt key files: {e}"))?;
+
+    let token_repo = TokenRepository::new(
+        Algorithm::EdDSA,
+        enc_key,
+        dec_key,
+        cfg.auth.token_duration,
+        cfg.auth.token_duration,
+        cfg.auth.secret_key.clone(),
     );
+
+    let app = layer_root_router(
+        Router::new()
+            .nest("/api/file", file_routes(Router::new()))
+            .nest("/api/auth", auth_routes(Router::new())),
+    )
+    .layer(Extension(obj_repo))
+    .layer(Extension(Arc::new(manager)))
+    .layer(Extension(user_repo))
+    .layer(Extension(Arc::new(token_repo)));
 
     let tls_cfg = load_tls_config(&cfg.ssl).await;
 

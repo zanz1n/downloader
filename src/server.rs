@@ -2,9 +2,10 @@ use std::{fmt::Display, iter::once, time::Duration};
 
 use axum::{
     body::Body,
+    handler::Handler,
     http::{header, HeaderValue},
-    response::IntoResponse,
-    Router,
+    response::{IntoResponse, Response},
+    routing, Router,
 };
 use tower::ServiceBuilder;
 use tower_http::{
@@ -21,6 +22,11 @@ use crate::{
     errors::{DownloaderError, HttpError},
     utils::fmt::fmt_duration,
 };
+
+#[cfg(feature = "embed")]
+#[derive(rust_embed::Embed)]
+#[folder = "frontend/build"]
+pub struct Asset;
 
 #[derive(Clone)]
 struct CustomOnResponse;
@@ -129,7 +135,67 @@ impl ResponseForPanic for JsonPanicHandler {
     }
 }
 
-pub fn layer_router<S>(router: Router<S>) -> Router<S>
+#[cfg(not(feature = "embed"))]
+async fn fallback_handler() -> Response {
+    DownloaderError::Http(HttpError::RouteNotFound).into_response()
+}
+
+#[cfg(feature = "embed")]
+async fn fallback_handler(req: axum::extract::Request) -> Response {
+    let path = req.uri().path().trim_start_matches("/");
+
+    if path.starts_with("api") {
+        return DownloaderError::Http(HttpError::RouteNotFound).into_response();
+    }
+
+    tracing::debug!(
+        path = %req.uri().path(),
+        version = ?req.version(),
+        "fetch static resource",
+    );
+
+    match Asset::get(path) {
+        Some(content) => (
+            axum::http::StatusCode::OK,
+            [(
+                header::CONTENT_TYPE,
+                content.metadata.mimetype().to_string(),
+            )],
+            content.data,
+        ),
+        None => {
+            if path.starts_with("_app") {
+                return DownloaderError::Http(HttpError::ResourceNotFound)
+                    .into_response();
+            } else {
+                Asset::get("index.html")
+                    .map(|content| {
+                        (
+                            axum::http::StatusCode::OK,
+                            [(
+                                header::CONTENT_TYPE,
+                                mime::TEXT_HTML.as_ref().to_owned(),
+                            )],
+                            content.data,
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        (
+                            axum::http::StatusCode::NOT_FOUND,
+                            [(
+                                header::CONTENT_TYPE,
+                                mime::TEXT_PLAIN.as_ref().to_owned(),
+                            )],
+                            std::borrow::Cow::Borrowed(b"Not Found"),
+                        )
+                    })
+            }
+        }
+    }
+    .into_response()
+}
+
+pub fn layer_root_router<S>(router: Router<S>) -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
 {
@@ -150,5 +216,17 @@ where
         .layer(CorsLayer::permissive())
         .layer(NormalizePathLayer::trim_trailing_slash());
 
-    router.layer(layer)
+    let fallback_layer = ServiceBuilder::new()
+        .layer(SetSensitiveHeadersLayer::new(once(header::AUTHORIZATION)))
+        .layer(SetResponseHeaderLayer::overriding(
+            header::SERVER,
+            HeaderValue::from_static("axum/0.7.5"),
+        ))
+        .layer(CatchPanicLayer::new())
+        .layer(CorsLayer::permissive())
+        .layer(NormalizePathLayer::trim_trailing_slash());
+
+    router
+        .layer(layer)
+        .fallback(routing::any(fallback_handler.layer(fallback_layer)))
 }

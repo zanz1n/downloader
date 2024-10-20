@@ -5,7 +5,7 @@ use axum::{
     extract::{multipart::MultipartError, Multipart, Path, Request},
     http::{header, HeaderValue},
     response::Response,
-    Extension,
+    routing, Extension, Router,
 };
 use futures_util::TryStreamExt;
 use serde::{Deserialize, Serialize};
@@ -24,9 +24,24 @@ use crate::{
 
 use super::{manager::ObjectManager, repository::ObjectRepository, Object};
 
+pub fn file_routes<S>(router: Router<S>) -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+{
+    router
+        .route("/:id/info", routing::get(get_file_information))
+        .route("/:id", routing::get(get_file))
+        .route("/", routing::get(get_all_files))
+        .route("/", routing::post(post_file))
+        .route("/:id", routing::delete(delete_file))
+        .route("/:id", routing::put(update_file))
+        .route("/multipart", routing::post(post_file_multipart))
+        .route("/:id/multipart", routing::put(update_file_multipart))
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct PostFileData {
+pub struct PostFileRequestData {
     pub name: String,
 }
 
@@ -119,7 +134,7 @@ pub async fn post_file(
     Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
-    Query(PostFileData { name }): Query<PostFileData>,
+    Query(PostFileRequestData { name }): Query<PostFileRequestData>,
     req: Request,
 ) -> Result<Json<Object>, DownloaderError> {
     let (reader, mime_type) = extract_request_body_file(req).await;
@@ -191,7 +206,7 @@ pub async fn update_file(
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
     Path(id): Path<Uuid>,
-    Query(PostFileData { name }): Query<PostFileData>,
+    Query(PostFileRequestData { name }): Query<PostFileRequestData>,
     req: Request,
 ) -> Result<Json<Object>, DownloaderError> {
     let (reader, mime_type) = extract_request_body_file(req).await;
