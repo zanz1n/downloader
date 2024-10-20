@@ -59,14 +59,14 @@ impl<T: AsyncRead, H: Digest> AsyncRead for HashRead<T, H> {
 }
 
 pub async fn fetch_jwt_key_files(
-    public_key: String,
-    private_key: String,
-) -> Result<(DecodingKey, EncodingKey), BoxDynError> {
+    public_key: &str,
+    private_key: &str,
+) -> Result<(EncodingKey, DecodingKey), BoxDynError> {
     let public_key = tokio::fs::read(public_key).await?;
     let public_key = DecodingKey::from_ed_pem(&public_key)?;
 
     let private_key = tokio::fs::read(private_key).await?;
     let private_key = EncodingKey::from_ed_pem(&private_key)?;
 
-    Ok((public_key, private_key))
+    Ok((private_key, public_key))
 }
