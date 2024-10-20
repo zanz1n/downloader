@@ -167,3 +167,48 @@ pub fn deserialize_socket_addr<'de, D: Deserializer<'de>>(
 ) -> Result<SocketAddr, D::Error> {
     deserializer.deserialize_any(NumberSocketAddrVisitor)
 }
+
+pub mod duration_secs {
+    use std::time::Duration;
+
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    #[inline]
+    pub fn serialize<S: Serializer>(
+        duration: &Duration,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        duration.as_secs().serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Duration, D::Error> {
+        let secs = u64::deserialize(deserializer)?;
+        Ok(Duration::from_secs(secs))
+    }
+}
+
+pub mod base64 {
+    use base64::{prelude::BASE64_STANDARD_NO_PAD as BASE64, Engine};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    #[inline]
+    pub fn serialize<S: Serializer>(
+        slice: &[u8],
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        BASE64.encode(slice).serialize(serializer)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Vec<u8>, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        BASE64.decode(s).map_err(|err| {
+            serde::de::Error::custom(format!(
+                "failed to decode base64 string: {err}"
+            ))
+        })
+    }
+}
