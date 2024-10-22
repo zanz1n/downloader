@@ -11,6 +11,9 @@ importers:
       '@floating-ui/dom':
         specifier: 1.6.11
         version: 1.6.11
+      ts-results-es:
+        specifier: ^4.2.0
+        version: 4.2.0
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -1567,6 +1570,9 @@ packages:
   ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
 
+  ts-results-es@4.2.0:
+    resolution: {integrity: sha512-GfpRk+qvHxa/6gADH8WMN/jXvs5oHYbKtMQc6X9L3VhToy5Lri3iQowyYSytaRcvPDiTT2z3vurzQZXFQFXKRA==}
+
   tslib@2.8.0:
     resolution: {integrity: sha512-jWVzBLplnCmoaTr13V9dYbiQ99wvZRd0vNWaDRg+aVYRcjDF3nDksxFDE/+fkXnKhpnUUkmx5pK/v8mCtLVqZA==}
 
@@ -3103,6 +3109,8 @@ snapshots:
       typescript: 5.6.3
 
   ts-interface-checker@0.1.13: {}
+
+  ts-results-es@4.2.0: {}
 
   tslib@2.8.0:
     optional: true
