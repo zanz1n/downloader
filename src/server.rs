@@ -142,6 +142,26 @@ async fn fallback_handler() -> Response {
 
 #[cfg(feature = "embed")]
 async fn fallback_handler(req: axum::extract::Request) -> Response {
+    use std::borrow::Cow;
+
+    use axum::http::StatusCode;
+
+    const NO_CACHE_HEADER: &'static str =
+        "no-cache, no-store, max-age=0, must-revalidate";
+    const CACHE_HEADER: &'static str = "public, max-age=86400";
+
+    const NOT_FOUND_STATUS: (
+        StatusCode,
+        Cow<'static, str>,
+        &'static str,
+        Cow<'static, [u8]>,
+    ) = (
+        StatusCode::NOT_FOUND,
+        Cow::Borrowed("text/plain"),
+        NO_CACHE_HEADER,
+        Cow::Borrowed(b"Not Found".as_slice()),
+    );
+
     let path = req.uri().path().trim_start_matches("/");
 
     if path.starts_with("api") {
@@ -154,45 +174,42 @@ async fn fallback_handler(req: axum::extract::Request) -> Response {
         "fetch static resource",
     );
 
-    match Asset::get(path) {
+    let (status, content_type, cache_control, data) = match Asset::get(path) {
         Some(content) => (
-            axum::http::StatusCode::OK,
-            [(
-                header::CONTENT_TYPE,
-                content.metadata.mimetype().to_string(),
-            )],
+            StatusCode::OK,
+            Cow::Owned(content.metadata.mimetype().to_owned()),
+            CACHE_HEADER,
             content.data,
         ),
         None => {
             if path.starts_with("_app") {
-                return DownloaderError::Http(HttpError::ResourceNotFound)
-                    .into_response();
+                NOT_FOUND_STATUS
             } else {
                 Asset::get("index.html")
                     .map(|content| {
                         (
-                            axum::http::StatusCode::OK,
-                            [(
-                                header::CONTENT_TYPE,
-                                mime::TEXT_HTML.as_ref().to_owned(),
-                            )],
+                            StatusCode::OK,
+                            Cow::Owned(content.metadata.mimetype().to_owned()),
+                            NO_CACHE_HEADER,
                             content.data,
                         )
                     })
-                    .unwrap_or_else(|| {
-                        (
-                            axum::http::StatusCode::NOT_FOUND,
-                            [(
-                                header::CONTENT_TYPE,
-                                mime::TEXT_PLAIN.as_ref().to_owned(),
-                            )],
-                            std::borrow::Cow::Borrowed(b"Not Found"),
-                        )
-                    })
+                    .unwrap_or_else(|| NOT_FOUND_STATUS)
             }
         }
-    }
-    .into_response()
+    };
+
+    let content_type = match content_type {
+        Cow::Borrowed(s) => HeaderValue::from_static(s),
+        Cow::Owned(s) => HeaderValue::from_str(&s).unwrap(),
+    };
+
+    Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, content_type)
+        .header(header::CACHE_CONTROL, cache_control)
+        .body(Body::from(data))
+        .unwrap()
 }
 
 pub fn layer_root_router<S>(router: Router<S>) -> Router<S>
@@ -213,20 +230,28 @@ where
             HeaderValue::from_static("axum/0.7.5"),
         ))
         .layer(CatchPanicLayer::custom(JsonPanicHandler))
-        .layer(CorsLayer::permissive())
+        .layer(CorsLayer::permissive().max_age(Duration::from_secs(86400)))
         .layer(NormalizePathLayer::trim_trailing_slash());
 
-    let fallback_layer = ServiceBuilder::new()
-        .layer(SetSensitiveHeadersLayer::new(once(header::AUTHORIZATION)))
-        .layer(SetResponseHeaderLayer::overriding(
-            header::SERVER,
-            HeaderValue::from_static("axum/0.7.5"),
-        ))
-        .layer(CatchPanicLayer::new())
-        .layer(CorsLayer::permissive())
-        .layer(NormalizePathLayer::trim_trailing_slash());
+    #[cfg(feature = "embed")]
+    {
+        let fallback_layer = ServiceBuilder::new()
+            .layer(SetSensitiveHeadersLayer::new(once(header::AUTHORIZATION)))
+            .layer(SetResponseHeaderLayer::overriding(
+                header::SERVER,
+                HeaderValue::from_static("axum/0.7.5"),
+            ))
+            .layer(CatchPanicLayer::new())
+            .layer(CorsLayer::permissive().max_age(Duration::from_secs(86400)))
+            .layer(NormalizePathLayer::trim_trailing_slash());
 
-    router
-        .layer(layer)
-        .fallback(routing::any(fallback_handler.layer(fallback_layer)))
+        return router
+            .layer(layer)
+            .fallback(routing::any(fallback_handler.layer(fallback_layer)));
+    }
+
+    #[cfg(not(feature = "embed"))]
+    {
+        return router.fallback(routing::any(fallback_handler)).layer(layer);
+    }
 }
