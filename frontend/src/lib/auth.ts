@@ -70,7 +70,7 @@ export class Authenticator {
         return localStorage.removeItem("auth_token");
     }
 
-    async getAuth(): Promise<Option<Auth>> {
+    getAuth(): Option<Auth> {
         try {
             const dataS = this.getAuthToken();
             if (!dataS) {
