@@ -79,6 +79,7 @@
             <div class="hidden sm:block">
                 <LightSwitch />
             </div>
+
             <div class="hidden sm:inline-flex space-x-1">
                 <a
                     class="btn-icon hover:variant-soft-primary"
@@ -101,9 +102,9 @@
                     <Avatar username={auth.value.username} width="w-11" />
                 </button>
             {:else}
-                <a class="btn-icon variant-filled w-24 h-10" href="/auth/login">
-                    <span class="w-7"><UserIcon /></span>
-                    Login
+                <a class="btn variant-filled" href="/auth/login">
+                    <span><UserIcon /></span>
+                    <span>Login</span>
                 </a>
             {/if}
         </div>
