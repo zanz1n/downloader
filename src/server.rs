@@ -2,7 +2,6 @@ use std::{fmt::Display, iter::once, time::Duration};
 
 use axum::{
     body::Body,
-    handler::Handler,
     http::{header, HeaderValue},
     response::{IntoResponse, Response},
     routing, Router,
@@ -11,6 +10,7 @@ use tower::ServiceBuilder;
 use tower_http::{
     catch_panic::{CatchPanicLayer, ResponseForPanic},
     cors::CorsLayer,
+    decompression::RequestDecompressionLayer,
     normalize_path::NormalizePathLayer,
     sensitive_headers::SetSensitiveHeadersLayer,
     set_header::SetResponseHeaderLayer,
@@ -148,7 +148,7 @@ async fn fallback_handler(req: axum::extract::Request) -> Response {
 
     const NO_CACHE_HEADER: &'static str =
         "no-cache, no-store, max-age=0, must-revalidate";
-    const CACHE_HEADER: &'static str = "public, max-age=86400";
+    const CACHE_HEADER: &'static str = "public, max-age=31536000";
 
     const NOT_FOUND_STATUS: (
         StatusCode,
@@ -218,6 +218,7 @@ where
 {
     let layer = ServiceBuilder::new()
         .layer(SetSensitiveHeadersLayer::new(once(header::AUTHORIZATION)))
+        .layer(RequestDecompressionLayer::new())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(CustomMakeSpan)
@@ -235,6 +236,9 @@ where
 
     #[cfg(feature = "embed")]
     {
+        use axum::handler::Handler;
+        use tower_http::compression::CompressionLayer;
+
         let fallback_layer = ServiceBuilder::new()
             .layer(SetSensitiveHeadersLayer::new(once(header::AUTHORIZATION)))
             .layer(SetResponseHeaderLayer::overriding(
@@ -242,6 +246,8 @@ where
                 HeaderValue::from_static("axum/0.7.5"),
             ))
             .layer(CatchPanicLayer::new())
+            .layer(RequestDecompressionLayer::new())
+            .layer(CompressionLayer::new())
             .layer(CorsLayer::permissive().max_age(Duration::from_secs(86400)))
             .layer(NormalizePathLayer::trim_trailing_slash());
 
