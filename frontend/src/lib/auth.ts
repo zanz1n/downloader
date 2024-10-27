@@ -1,7 +1,8 @@
-import { None, Some, type Option } from "ts-results-es";
+import { Err, None, Ok, Result, Some, type Option } from "ts-results-es";
 import { z } from "zod";
-import { userSchema } from "./user";
+import { userSchema, type User } from "./user";
 import { jwtDecode } from "jwt-decode";
+import { AppError, appErrorSchema } from "./error";
 
 export const authSchema = z
     .object({
@@ -17,7 +18,7 @@ export const authSchema = z
             .nonnegative()
             .transform((v) => new Date(v * 1000)),
         iss: z.string(),
-        perm: z.number().nonnegative(),
+        perm: z.number().int().nonnegative(),
         username: z.string().min(1)
     })
     .transform((o) => ({
@@ -52,7 +53,7 @@ export class Authenticator {
 
     static getInstance(): Authenticator {
         if (!this.INSTANCE) {
-            this.INSTANCE = new Authenticator("/");
+            this.INSTANCE = new Authenticator("/api");
         }
 
         return this.INSTANCE;
@@ -87,6 +88,100 @@ export class Authenticator {
         } catch (e) {
             console.error("Authenticator.getAuth gone wrong:", e);
             return None;
+        }
+    }
+
+    logout() {
+        try {
+            this.removeAuthToken();
+        } catch (e) {
+            console.error("Authenticator.logout gone wrong:", e);
+        }
+    }
+
+    async login(data: LoginData): Promise<Result<User, AppError>> {
+        try {
+            const res = await fetch(this.url + "/auth/login", {
+                body: JSON.stringify(data),
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const json = await res.json();
+            if (!res.ok) {
+                const error = appErrorSchema.parse(json);
+                return Err(error);
+            }
+
+            const resData = loggedInSchema.parse(json);
+            this.setAuthToken(resData.token);
+
+            return Ok(resData.user);
+        } catch (e) {
+            if (e instanceof Error) {
+                return Err(new AppError(e.message, 0));
+            }
+            return Err(new AppError("Unknown", 0));
+        }
+    }
+
+    async signup(data: LoginData, serverKey: string): Promise<Result<User, AppError>> {
+        try {
+            const res = await fetch(this.url + "/auth/signup", {
+                body: JSON.stringify(data),
+                method: "POST",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: "Secret " + serverKey
+                }
+            });
+
+            const json = await res.json();
+            if (!res.ok) {
+                const error = appErrorSchema.parse(json);
+                return Err(error);
+            }
+
+            const resData = loggedInSchema.parse(json);
+            this.setAuthToken(resData.token);
+
+            return Ok(resData.user);
+        } catch (e) {
+            if (e instanceof Error) {
+                return Err(new AppError(e.message, 0));
+            }
+            return Err(new AppError("Unknown", 0));
+        }
+    }
+
+    async fetch(input: string, data: unknown): Promise<Result<unknown, AppError>> {
+        try {
+            const token = this.getAuthToken();
+            if (!token) {
+                return Err(new AppError("Unauthorized", 0));
+            }
+
+            const res = await fetch(this.url + input, {
+                body: JSON.stringify(data),
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Authorization: "Bearer " + token
+                }
+            });
+
+            const json = await res.json();
+
+            return Ok(json);
+        } catch (e) {
+            if (e instanceof Error) {
+                return Err(new AppError(e.message, 0));
+            }
+            return Err(new AppError("Unknown", 0));
         }
     }
 }
