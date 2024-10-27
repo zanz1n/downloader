@@ -3,11 +3,21 @@
     import LogoutIcon from "$lib/assets/icons/LogoutIcon.svelte";
     import UserIcon from "$lib/assets/icons/UserIcon.svelte";
     import UserSettingsIcon from "$lib/assets/icons/UserSettingsIcon.svelte";
-    import type { Auth } from "$lib/auth";
-    import { AppBar, LightSwitch, popup, type PopupSettings } from "@skeletonlabs/skeleton";
+    import { Authenticator, type Auth } from "$lib/auth";
+    import {
+        AppBar,
+        LightSwitch,
+        popup,
+        type PopupSettings,
+        getToastStore
+    } from "@skeletonlabs/skeleton";
     import { type Option } from "ts-results-es";
     import Avatar from "./Avatar.svelte";
     import GithubIcon from "$lib/assets/icons/GithubIcon.svelte";
+    import { goto } from "$app/navigation";
+
+    const toastStore = getToastStore();
+    const authenticator = Authenticator.getInstance();
 
     export let auth: Option<Auth>;
 
@@ -15,8 +25,20 @@
         event: "click",
         target: "popupAccount",
         placement: "bottom",
-        closeQuery: ".listbox-item"
+        closeQuery: ".popup-account-close"
     };
+
+    function logout() {
+        authenticator.logout();
+
+        toastStore.trigger({
+            message: `Successfully logged out`,
+            timeout: 5000,
+            background: "variant-filled-success"
+        });
+
+        goto("/", { invalidateAll: true });
+    }
 </script>
 
 <div class="card p-4 w-60 shadow-xl" data-popup="popupAccount">
@@ -25,7 +47,7 @@
             <div class="flex flex-col justify-center items-center gap-4">
                 <Avatar username={auth.value.username} width="w-16" />
 
-                <h4 class="h4">Izan Rodrigues</h4>
+                <h4 class="h4">{auth.value.username}</h4>
 
                 <div class="sm:hidden space-y-4">
                     <LightSwitch />
@@ -35,21 +57,25 @@
             <nav class="list-nav">
                 <ul>
                     <li>
-                        <a href="/account">
+                        <a class="popup-account-close" href="/account">
                             <span><UserIcon /></span>
                             <span>Account</span>
                         </a>
                     </li>
 
                     <li>
-                        <a href="/settings">
+                        <a class="popup-account-close" href="/settings">
                             <span><UserSettingsIcon /></span>
                             <span>Client settings</span>
                         </a>
                     </li>
 
                     <li>
-                        <a href="https://github.com/zanz1n/downloader/issues" target="_blank">
+                        <a
+                            class="popup-account-close"
+                            href="https://github.com/zanz1n/downloader/issues"
+                            target="_blank"
+                        >
                             <span><BugIcon /></span>
                             <span>Report bug</span>
                         </a>
@@ -58,7 +84,7 @@
             </nav>
             <hr />
             <div>
-                <button class="btn variant-filled w-full">
+                <button on:click={logout} class="btn variant-filled w-full popup-account-close">
                     <span><LogoutIcon /></span>
                     <span>Log out</span>
                 </button>
@@ -67,7 +93,7 @@
     {/if}
 </div>
 
-<AppBar gridColumns="grid-cols-3 " slotDefault="place-self-center" slotTrail="place-content-end">
+<AppBar gridColumns="grid-cols-3" slotDefault="place-self-center" slotTrail="place-content-end">
     <svelte:fragment slot="lead">
         <a href="/">
             <h3 class="h3">Downloader</h3>
