@@ -3,7 +3,7 @@ use std::time::Duration;
 use ::axum::http::StatusCode;
 use bitflags::bitflags;
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::{de::Unexpected, Deserialize, Serialize};
 use uuid::Uuid;
 
 pub mod axum;
@@ -167,7 +167,7 @@ impl Token {
 }
 
 bitflags! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub struct Permission: u8 {
         const SHARE = 1;
 
@@ -192,5 +192,32 @@ bitflags! {
 
         const SINGLE_FILE_R = 0;
         const SINGLE_FILE_RW = Self::WRITE_OWNED.bits();
+    }
+}
+
+impl Serialize for Permission {
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.bits().serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Permission {
+    #[inline]
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let bits = u8::deserialize(deserializer)?;
+
+        Permission::from_bits(bits).ok_or_else(|| {
+            serde::de::Error::invalid_value(
+                Unexpected::Unsigned(bits.into()),
+                &"a valid set of permission bits",
+            )
+        })
     }
 }
