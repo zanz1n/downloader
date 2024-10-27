@@ -48,7 +48,7 @@
         }
     }
 
-    function onSubmit(rawData: any) {
+    function onSubmit(rawData: unknown) {
         const res = formDataSchema.safeParse(rawData);
 
         if (res.success) {

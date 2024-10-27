@@ -1,12 +1,12 @@
 <script lang="ts">
     export let title: string;
 
-    export let onSubmit: ((e: any) => void) | null = null;
+    export let onSubmit: ((e: unknown) => void) | null = null;
 
     function onSubmitInternal(e: SubmitEvent) {
         if (onSubmit) {
             const formData = new FormData(e.target as HTMLFormElement);
-            const data: any = {};
+            const data: Record<string, unknown> = {};
 
             for (let field of formData) {
                 const [key, value] = field;
