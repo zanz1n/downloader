@@ -1,0 +1,46 @@
+name: Node
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20"]
+
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Checkout LFS objects
+        run: git lfs checkout
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Check code
+        working-directory: ./frontend
+        run: pnpm check
+
+      - name: Lint code
+        working-directory: ./frontend
+        run: pnpm lint
+
+      - name: Build code
+        working-directory: ./frontend
+        run: pnpm build
