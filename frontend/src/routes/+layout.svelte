@@ -2,8 +2,20 @@
     import "../app.postcss";
     import type { PageData } from "./$types";
 
-    import { computePosition, autoUpdate, flip, shift, offset, arrow } from "@floating-ui/dom";
-    import { storePopup, AppShell, initializeStores, Toast } from "@skeletonlabs/skeleton";
+    import {
+        computePosition,
+        autoUpdate,
+        flip,
+        shift,
+        offset,
+        arrow
+    } from "@floating-ui/dom";
+    import {
+        storePopup,
+        AppShell,
+        initializeStores,
+        Toast
+    } from "@skeletonlabs/skeleton";
     import Header from "$lib/components/Header.svelte";
 
     storePopup.set({ computePosition, autoUpdate, flip, shift, offset, arrow });

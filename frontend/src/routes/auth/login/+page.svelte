@@ -32,7 +32,8 @@
             if (res.error.errorCode == 0) {
                 toastStore.trigger({
                     message:
-                        "Something went wrong: " + "check the browser console for more information",
+                        "Something went wrong: " +
+                        "check the browser console for more information",
                     timeout: 5000,
                     background: "variant-filled-error"
                 });
@@ -74,12 +75,24 @@
 <Form {onSubmit} title="Login">
     <label class="label w-full" for="username">
         <span>Username</span>
-        <input name="username" class="input" type="text" placeholder="Username" required />
+        <input
+            name="username"
+            class="input"
+            type="text"
+            placeholder="Username"
+            required
+        />
     </label>
 
     <label class="label w-full" for="password">
         <span>Password</span>
-        <input name="password" class="input" type="password" placeholder="Password" required />
+        <input
+            name="password"
+            class="input"
+            type="password"
+            placeholder="Password"
+            required
+        />
     </label>
 
     <svelte:fragment slot="bottom">

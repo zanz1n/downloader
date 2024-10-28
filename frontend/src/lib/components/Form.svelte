@@ -28,7 +28,9 @@
 
         <slot />
 
-        <div class="flex flex-col justify-center items-center w-full gap-2 py-4">
+        <div
+            class="flex flex-col justify-center items-center w-full gap-2 py-4"
+        >
             <slot name="bottom" />
         </div>
     </form>

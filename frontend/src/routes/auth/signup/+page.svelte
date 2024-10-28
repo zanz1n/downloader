@@ -40,7 +40,8 @@
             if (res.error.errorCode == 0) {
                 toastStore.trigger({
                     message:
-                        "Something went wrong: " + "check the browser console for more information",
+                        "Something went wrong: " +
+                        "check the browser console for more information",
                     timeout: 5000,
                     background: "variant-filled-error"
                 });
@@ -93,12 +94,24 @@
 <Form {onSubmit} title="Sign Up">
     <label class="label w-full" for="username">
         <span>Username</span>
-        <input name="username" class="input" type="text" placeholder="Username" required />
+        <input
+            name="username"
+            class="input"
+            type="text"
+            placeholder="Username"
+            required
+        />
     </label>
 
     <label class="label w-full" for="password">
         <span>Password</span>
-        <input name="password" class="input" type="password" placeholder="Password" required />
+        <input
+            name="password"
+            class="input"
+            type="password"
+            placeholder="Password"
+            required
+        />
     </label>
 
     <label class="label w-full" for="confirmPassword">
@@ -114,7 +127,13 @@
 
     <label class="label w-full" for="serverKey">
         <span>Server key</span>
-        <input name="serverKey" class="input" type="text" placeholder="Server key" required />
+        <input
+            name="serverKey"
+            class="input"
+            type="text"
+            placeholder="Server key"
+            required
+        />
     </label>
 
     <svelte:fragment slot="bottom">
@@ -123,7 +142,9 @@
             <span>Sign up</span>
         </button>
         <p>
-            Or <a class="anchor" href="/auth/login">login to an existing account</a>
+            Or <a class="anchor" href="/auth/login"
+                >login to an existing account</a
+            >
         </p>
     </svelte:fragment>
 </Form>

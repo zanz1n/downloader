@@ -128,7 +128,10 @@ export class Authenticator {
         }
     }
 
-    async signup(data: LoginData, serverKey: string): Promise<Result<User, AppError>> {
+    async signup(
+        data: LoginData,
+        serverKey: string
+    ): Promise<Result<User, AppError>> {
         try {
             const res = await fetch(this.url + "/auth/signup", {
                 body: JSON.stringify(data),
@@ -158,7 +161,10 @@ export class Authenticator {
         }
     }
 
-    async fetch(input: string, data: unknown): Promise<Result<unknown, AppError>> {
+    async fetch(
+        input: string,
+        data: unknown
+    ): Promise<Result<unknown, AppError>> {
         try {
             const token = this.getAuthToken();
             if (!token) {

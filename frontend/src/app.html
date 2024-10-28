@@ -4,7 +4,10 @@
         <meta charset="utf-8" />
         <link rel="icon" href="%sveltekit.assets%/favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="A web application made to host and share files" />
+        <meta
+            name="description"
+            content="A web application made to host and share files"
+        />
         <title>Downloader</title>
 
         %sveltekit.head%
@@ -13,8 +16,12 @@
                 const elemHtmlClasses = document.documentElement.classList;
                 const condLocalStorageUserPrefs =
                     localStorage.getItem("modeUserPrefers") === "false";
-                const condLocalStorageUserPrefsExists = !("modeUserPrefers" in localStorage);
-                const condMatchMedia = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                const condLocalStorageUserPrefsExists = !(
+                    "modeUserPrefers" in localStorage
+                );
+                const condMatchMedia = window.matchMedia(
+                    "(prefers-color-scheme: dark)"
+                ).matches;
                 if (
                     condLocalStorageUserPrefs ||
                     (condLocalStorageUserPrefsExists && condMatchMedia)

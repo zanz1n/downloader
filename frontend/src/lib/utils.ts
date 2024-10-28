@@ -15,7 +15,10 @@ export function joinErrorFields(
         }
 
         if (error.length == 0) {
-            error += field.name + ": " + field.obj._errors.join(errorSeparator + " ");
+            error +=
+                field.name +
+                ": " +
+                field.obj._errors.join(errorSeparator + " ");
         } else {
             error +=
                 fieldSeparator +

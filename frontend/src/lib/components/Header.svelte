@@ -84,7 +84,10 @@
             </nav>
             <hr />
             <div>
-                <button on:click={logout} class="btn variant-filled w-full popup-account-close">
+                <button
+                    on:click={logout}
+                    class="btn variant-filled w-full popup-account-close"
+                >
                     <span><LogoutIcon /></span>
                     <span>Log out</span>
                 </button>
@@ -93,7 +96,11 @@
     {/if}
 </div>
 
-<AppBar gridColumns="grid-cols-3" slotDefault="place-self-center" slotTrail="place-content-end">
+<AppBar
+    gridColumns="grid-cols-3"
+    slotDefault="place-self-center"
+    slotTrail="place-content-end"
+>
     <svelte:fragment slot="lead">
         <a href="/">
             <h3 class="h3">Downloader</h3>
