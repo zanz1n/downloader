@@ -14,7 +14,7 @@ use storage::{
 use tokio::{runtime::Builder, select};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
-use user::repository::UserRepository;
+use user::{repository::UserRepository, routes::user_routes};
 use utils::{crypto::fetch_jwt_key_files, sys::shutdown_signal};
 
 mod auth;
@@ -58,7 +58,8 @@ async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
     let app = layer_root_router(
         Router::new()
             .nest("/api/file", file_routes(Router::new()))
-            .nest("/api/auth", auth_routes(Router::new())),
+            .nest("/api/auth", auth_routes(Router::new()))
+            .nest("/api/user", user_routes(Router::new())),
     )
     .layer(Extension(obj_repo))
     .layer(Extension(Arc::new(manager)))

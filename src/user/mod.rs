@@ -7,6 +7,7 @@ use uuid::Uuid;
 use crate::auth::Permission;
 
 pub mod repository;
+pub mod routes;
 
 #[derive(Debug, thiserror::Error)]
 pub enum UserError {
