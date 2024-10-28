@@ -230,6 +230,7 @@ mod tests {
 
     use super::ObjectManager;
 
+    #[allow(dead_code, reason = "this is a struct to hold ownership of data")]
     struct TempHolder {
         data_dir: TempDir,
         temp_dir: TempDir,

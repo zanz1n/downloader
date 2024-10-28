@@ -120,6 +120,7 @@ impl TokenRepository {
         Ok(eq)
     }
 
+    #[cfg(test)]
     pub fn get_srv_key(&self) -> String {
         base64::prelude::BASE64_STANDARD.encode(&self.srv_secret)
     }

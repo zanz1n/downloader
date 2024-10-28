@@ -129,11 +129,6 @@ impl Token {
     }
 
     #[inline]
-    pub fn can_read_owned(&self) -> bool {
-        true
-    }
-
-    #[inline]
     pub fn can_share(&self) -> bool {
         self.permission().contains(Permission::SHARE)
     }
