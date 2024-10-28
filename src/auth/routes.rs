@@ -22,9 +22,10 @@ where
     S: Clone + Send + Sync + 'static,
 {
     router
-        .route("/login", routing::post(login))
-        .route("/signup", routing::post(signup))
-        .route("/token", routing::post(generate_file_token))
+        .route("/self", routing::get(get_self))
+        .route("/login", routing::post(post_login))
+        .route("/signup", routing::post(post_signup))
+        .route("/token/:id", routing::post(post_file_token))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -67,7 +68,13 @@ pub struct FileTokenResponseData {
     pub token: String,
 }
 
-pub async fn login(
+pub async fn get_self(
+    Authorization(token): Authorization,
+) -> Result<Json<Token>, DownloaderError> {
+    Ok(Json(token))
+}
+
+pub async fn post_login(
     Extension(token_repo): Extension<Arc<TokenRepository>>,
     Extension(user_repo): Extension<UserRepository<Sqlite>>,
     Json(data): Json<LoginRequestData>,
@@ -93,7 +100,7 @@ pub async fn login(
     Ok(Json(LoginResponseData { token, user }))
 }
 
-pub async fn signup(
+pub async fn post_signup(
     Authorization(token): Authorization,
     Extension(token_repo): Extension<Arc<TokenRepository>>,
     Extension(user_repo): Extension<UserRepository<Sqlite>>,
@@ -104,7 +111,10 @@ pub async fn signup(
     }
 
     let (data, permission) = data.split();
-    let permission = permission.unwrap_or(Permission::UNPRIVILEGED);
+    let permission = permission.unwrap_or_else(|| match token {
+        Token::Server => Permission::ADMIN,
+        _ => Permission::UNPRIVILEGED,
+    });
 
     let user = user_repo.create(permission, data).await?;
     let token = token_repo.generate_user_token(
@@ -116,7 +126,7 @@ pub async fn signup(
     Ok(Json(LoginResponseData { user, token }))
 }
 
-pub async fn generate_file_token(
+pub async fn post_file_token(
     Authorization(token): Authorization,
     Extension(token_repo): Extension<Arc<TokenRepository>>,
     Extension(obj_repo): Extension<ObjectRepository<Sqlite>>,
