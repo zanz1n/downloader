@@ -26,6 +26,7 @@ where
         .route("/login", routing::post(post_login))
         .route("/signup", routing::post(post_signup))
         .route("/token/:id", routing::post(post_file_token))
+        .route("/password", routing::put(update_self_password))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -66,6 +67,13 @@ pub struct FileTokenRequestData {
 pub struct FileTokenResponseData {
     pub file: Object,
     pub token: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct UpdatePasswordRequestData {
+    pub username: String,
+    pub old_password: String,
+    pub new_password: String,
 }
 
 pub async fn get_self(
@@ -173,4 +181,29 @@ pub async fn post_file_token(
         .generate_file_token(file.id, duration, issuer, permission)?;
 
     Ok(Json(FileTokenResponseData { file, token }))
+}
+
+pub async fn update_self_password(
+    Extension(user_repo): Extension<UserRepository<Sqlite>>,
+    Extension(token_repo): Extension<Arc<TokenRepository>>,
+    Json(data): Json<UpdatePasswordRequestData>,
+) -> Result<Json<LoginResponseData>, DownloaderError> {
+    let mut user = user_repo
+        .authenticate(UserData {
+            username: data.username,
+            password: data.old_password,
+        })
+        .await?;
+
+    user = user_repo
+        .update_password(user.id, data.new_password)
+        .await?;
+
+    let token = token_repo.generate_user_token(
+        user.id,
+        user.permission,
+        user.username.clone(),
+    )?;
+
+    Ok(Json(LoginResponseData { user, token }))
 }
