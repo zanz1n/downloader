@@ -1,6 +1,13 @@
 <script lang="ts">
     import { Avatar } from "@skeletonlabs/skeleton";
 
+    type Props = {
+        width: string;
+        username: string;
+    };
+
+    let { width, username }: Props = $props();
+
     function getInitials(name: string): string {
         const split = name.split(" ");
         if (split.length >= 2) {
@@ -11,12 +18,11 @@
         return "";
     }
 
-    export let width: string;
-    export let username: string;
+    const initials = $derived(getInitials(username));
 </script>
 
 <Avatar
-    initials={getInitials(username)}
+    {initials}
     border="border-2 border-surface-300-600-token hover:!border-primary-500"
     fontSize={200}
     {width}

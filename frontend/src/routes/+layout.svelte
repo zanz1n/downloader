@@ -1,6 +1,5 @@
 <script lang="ts">
     import "../app.postcss";
-    import type { PageData } from "./$types";
 
     import {
         computePosition,
@@ -21,7 +20,7 @@
     storePopup.set({ computePosition, autoUpdate, flip, shift, offset, arrow });
     initializeStores();
 
-    export let data: PageData;
+    let { children, data } = $props();
 </script>
 
 <Toast />
@@ -31,6 +30,6 @@
         <svelte:fragment slot="header">
             <Header auth={data.auth} />
         </svelte:fragment>
-        <slot />
+        {@render children()}
     </AppShell>
 </div>

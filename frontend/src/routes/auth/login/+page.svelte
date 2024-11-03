@@ -95,11 +95,11 @@
         />
     </label>
 
-    <svelte:fragment slot="bottom">
+    {#snippet bottom()}
         <button class="btn variant-filled w-full" type="submit">
             <span><LoginIcon /></span>
             <span>Log in</span>
         </button>
         <p>Or <a class="anchor" href="/auth/signup">create an account</a></p>
-    </svelte:fragment>
+    {/snippet}
 </Form>

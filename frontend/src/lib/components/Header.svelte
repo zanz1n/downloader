@@ -19,7 +19,11 @@
     const toastStore = getToastStore();
     const authenticator = Authenticator.getInstance();
 
-    export let auth: Option<Auth>;
+    type Props = {
+        auth: Option<Auth>;
+    };
+
+    let { auth }: Props = $props();
 
     const popupAccount: PopupSettings = {
         event: "click",
@@ -85,7 +89,7 @@
             <hr />
             <div>
                 <button
-                    on:click={logout}
+                    onclick={logout}
                     class="btn variant-filled w-full popup-account-close"
                 >
                     <span><LogoutIcon /></span>
