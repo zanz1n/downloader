@@ -11,4 +11,4 @@ CREATE TABLE object (
     checksum_256 blob NOT NULL
 ) STRICT;
 
-CREATE UNIQUE INDEX object_user_id_idx ON object(user_id);
+CREATE INDEX object_user_id_idx ON object(user_id);
