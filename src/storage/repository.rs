@@ -114,6 +114,34 @@ where
         })
     }
 
+    pub async fn get_by_user(
+        &self,
+        user_id: Uuid,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<Object>, RepositoryError> {
+        if limit > MAX_LIMIT {
+            return Err(RepositoryError::LimitOutOfRange(limit));
+        }
+
+        sqlx::query_as(
+            "SELECT * FROM object WHERE user_id = $1 \
+            ORDER BY rowid LIMIT $2 OFFSET $3",
+        )
+        .bind(user_id.into_bytes().as_slice())
+        .bind(limit as i64)
+        .bind(offset as i64)
+        .fetch_all(&self.db)
+        .await
+        .map_err(|error| {
+            tracing::error!(
+                %error,
+                "got sqlx error while retrieving multiple user objects",
+            );
+            RepositoryError::Sqlx(error)
+        })
+    }
+
     pub async fn create(
         &self,
         id: Uuid,
@@ -275,6 +303,70 @@ mod tests {
             all_data.into_iter().map(|v| (v.id, v.data)).eq(datas),
             "returned data in get_all mismatches the created one"
         );
+    }
+
+    #[test(tokio::test)]
+    async fn test_get_by_user() {
+        const SIZE: usize = 13;
+
+        let repo = repository().await;
+        let mut datas = Vec::with_capacity(SIZE + 3);
+
+        let user_id = Uuid::new_v4();
+
+        for _ in 0..SIZE {
+            let id = Uuid::new_v4();
+            let data = rand_data();
+
+            datas.push((id, data.clone()));
+            repo.create(id, user_id, data).await.unwrap();
+        }
+
+        for _ in 0..3 {
+            repo.create(Uuid::new_v4(), Uuid::new_v4(), rand_data())
+                .await
+                .unwrap();
+        }
+
+        let all_data = repo.get_by_user(user_id, SIZE as u32, 0).await.unwrap();
+
+        assert!(all_data.into_iter().map(|v| (v.id, v.data)).eq(datas));
+    }
+
+    #[test(tokio::test)]
+    async fn test_get_by_user_offset() {
+        const SIZE: usize = 28;
+        const CHUNK_SIZE: usize = 4;
+
+        let repo = repository().await;
+        let mut datas = Vec::with_capacity(SIZE);
+
+        let user_id = Uuid::new_v4();
+
+        for _ in 0..SIZE {
+            let id = Uuid::new_v4();
+            let data = rand_data();
+
+            datas.push((id, data.clone()));
+            repo.create(id, user_id, data).await.unwrap();
+        }
+
+        let mut all_data = Vec::new();
+
+        for i in 0..(SIZE / CHUNK_SIZE) {
+            let chunk = repo
+                .get_by_user(
+                    user_id,
+                    CHUNK_SIZE as u32,
+                    (CHUNK_SIZE * i) as u32,
+                )
+                .await
+                .unwrap();
+
+            all_data.extend(chunk);
+        }
+
+        assert!(all_data.into_iter().map(|v| (v.id, v.data)).eq(datas));
     }
 
     #[test(tokio::test)]

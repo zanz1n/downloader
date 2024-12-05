@@ -32,6 +32,7 @@ where
         .route("/:id/info", routing::get(get_file_information))
         .route("/:id", routing::get(get_file))
         .route("/", routing::get(get_all_files))
+        .route("/user/:user_id/info", routing::get(get_by_user))
         .route("/", routing::post(post_file))
         .route("/:id", routing::delete(delete_file))
         .route("/:id", routing::put(update_file))
@@ -125,6 +126,28 @@ pub async fn get_all_files(
     }
 
     repo.get_all(data.limit, data.offset)
+        .await
+        .map(Json)
+        .map_err(DownloaderError::Repository)
+}
+
+pub async fn get_by_user(
+    Authorization(token): Authorization,
+    Extension(repo): Extension<ObjectRepository<Sqlite>>,
+    Path(user_id): Path<Uuid>,
+    Query(data): Query<PaginationData>,
+) -> Result<Json<Vec<Object>>, DownloaderError> {
+    let can_access = token.can_read_all()
+        || match token {
+            Token::User(user_token) => user_token.user_id == user_id,
+            _ => false,
+        };
+
+    if !can_access {
+        return Err(AuthError::AccessDenied.into());
+    }
+
+    repo.get_by_user(user_id, data.limit, data.offset)
         .await
         .map(Json)
         .map_err(DownloaderError::Repository)
