@@ -99,6 +99,29 @@ export class Authenticator {
         }
     }
 
+    async getUser(): Promise<Result<User, AppError>> {
+        try {
+            const res = await this.fetch("/user/self", null);
+            if (!res.isOk()) {
+                return Err(res.error);
+            }
+
+            const json = await res.value.json();
+            if (!res.value.ok) {
+                const error = appErrorSchema.parse(json);
+                return Err(error);
+            }
+
+            const user = userSchema.parse(json);
+            return Ok(user);
+        } catch (e) {
+            if (e instanceof Error) {
+                return Err(new AppError(e.message, 0));
+            }
+            return Err(new AppError("Unknown", 0));
+        }
+    }
+
     async login(data: LoginData): Promise<Result<User, AppError>> {
         try {
             const res = await fetch(this.url + "/auth/login", {
@@ -164,25 +187,30 @@ export class Authenticator {
     async fetch(
         input: string,
         data: unknown
-    ): Promise<Result<unknown, AppError>> {
+    ): Promise<Result<Response, AppError>> {
         try {
             const token = this.getAuthToken();
             if (!token) {
                 return Err(new AppError("Unauthorized", 0));
             }
 
+            const headers = {
+                Accept: "application/json",
+                Authorization: "Bearer " + token
+            } as Record<string, string>;
+
+            let body = null;
+            if (data) {
+                headers["Content-Type"] = "application/json";
+                body = JSON.stringify(data);
+            }
+
             const res = await fetch(this.url + input, {
-                body: JSON.stringify(data),
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    Authorization: "Bearer " + token
-                }
+                body,
+                headers
             });
 
-            const json = await res.json();
-
-            return Ok(json);
+            return Ok(res);
         } catch (e) {
             if (e instanceof Error) {
                 return Err(new AppError(e.message, 0));
