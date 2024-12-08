@@ -57,7 +57,7 @@
         }
     }
 
-    function onSubmit(rawData: unknown) {
+    function onSubmit(rawData: unknown, reset: () => void) {
         const res = formDataSchema.safeParse(rawData);
 
         if (res.success) {
@@ -70,6 +70,7 @@
                 return;
             }
 
+            reset();
             handleLogin(res.data).catch((e) => {
                 console.error("handleLogin gone wrong:", e);
             });

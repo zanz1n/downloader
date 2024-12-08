@@ -1,7 +1,7 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
     import LoginIcon from "$lib/assets/icons/LoginIcon.svelte";
-    import { Authenticator, type LoginData } from "$lib/auth";
+    import { Authenticator } from "$lib/auth";
     import Form from "$lib/components/Form.svelte";
     import { joinErrorFields } from "$lib/utils";
     import { getToastStore } from "@skeletonlabs/skeleton";
@@ -18,7 +18,10 @@
     type FormDataType = z.infer<typeof formDataSchema>;
 
     async function handleSignin(data: FormDataType) {
-        const res = await authenticator.login(data satisfies LoginData);
+        const res = await authenticator.login({
+            username: data.username,
+            password: data.password
+        });
 
         if (res.isOk()) {
             toastStore.trigger({
@@ -49,10 +52,11 @@
         }
     }
 
-    function onSubmit(rawData: unknown) {
+    function onSubmit(rawData: unknown, reset: () => void) {
         const res = formDataSchema.safeParse(rawData);
 
         if (res.success) {
+            reset();
             handleSignin(res.data).catch((e) => {
                 console.error("handleSignin gone wrong:", e);
             });

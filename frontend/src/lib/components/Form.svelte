@@ -2,7 +2,7 @@
     import type { Snippet } from "svelte";
 
     type Props = {
-        onSubmit?: (e: unknown) => void;
+        onSubmit?: (e: unknown, reset: () => void) => void;
         children?: Snippet;
         bottom?: Snippet;
         title?: string;
@@ -21,7 +21,15 @@
                 const [key, value] = field;
                 data[key] = value;
             }
-            onSubmit(data);
+            onSubmit(data, () => {
+                if (
+                    !!e.target &&
+                    "reset" in e.target &&
+                    typeof e.target.reset == "function"
+                ) {
+                    e.target.reset();
+                }
+            });
         }
     }
 </script>
