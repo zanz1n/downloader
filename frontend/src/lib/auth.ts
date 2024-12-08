@@ -184,6 +184,49 @@ export class Authenticator {
         }
     }
 
+    async changePassword(
+        oldpass: string,
+        newpass: string
+    ): Promise<Result<User, AppError>> {
+        try {
+            const token = this.getAuth();
+            if (token.isNone()) {
+                return Err(new AppError("Unauthorized", 0));
+            }
+
+            const data = {
+                username: token.value.username,
+                old_password: oldpass,
+                new_password: newpass
+            };
+
+            const res = await fetch(this.url + "/auth/password", {
+                body: JSON.stringify(data),
+                method: "PUT",
+                headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const json = await res.json();
+            if (!res.ok) {
+                const error = appErrorSchema.parse(json);
+                return Err(error);
+            }
+
+            const resData = loggedInSchema.parse(json);
+            this.setAuthToken(resData.token);
+
+            return Ok(resData.user);
+        } catch (e) {
+            if (e instanceof Error) {
+                return Err(new AppError(e.message, 0));
+            }
+            return Err(new AppError("Unknown", 0));
+        }
+    }
+
     async fetch(
         input: string,
         data: unknown
