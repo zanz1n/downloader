@@ -1,6 +1,6 @@
 <script lang="ts">
     import { goto } from "$app/navigation";
-    import { Authenticator, type Auth } from "$lib/auth";
+    import { Authenticator } from "$lib/auth";
     import { getToastStore } from "@skeletonlabs/skeleton";
 
     const toastStore = getToastStore();
