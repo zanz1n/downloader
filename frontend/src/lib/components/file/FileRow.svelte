@@ -1,14 +1,10 @@
 <script lang="ts">
-    import ClipboardCheckIcon from "$lib/assets/icons/ClipboardCheckIcon.svelte";
-    import ClipboardIcon from "$lib/assets/icons/ClipboardIcon.svelte";
     import DownloadIcon from "$lib/assets/icons/DownloadIcon.svelte";
     import FilePenIcon from "$lib/assets/icons/FilePenIcon.svelte";
     import ShareNodesIcon from "$lib/assets/icons/ShareNodesIcon.svelte";
     import TrashBinIcon from "$lib/assets/icons/TrashBinIcon.svelte";
     import { File } from "$lib/file";
-    import { clipboard, getToastStore } from "@skeletonlabs/skeleton";
-
-    const toastStore = getToastStore();
+    import Clipboard from "./Clipboard.svelte";
 
     const rowClasses =
         "flex flex-col justify-center items-center xl:w-20 sm:w-16";
@@ -22,21 +18,6 @@
 
     let { file, triggerDelete, triggerOpenInfo, triggerShare }: Props =
         $props();
-
-    let copied = $state(false);
-
-    function onClipboardClick() {
-        toastStore.trigger({
-            message: "Copied to clipboard",
-            timeout: 2000
-        });
-        setTimeout(() => {
-            copied = true;
-            setTimeout(() => {
-                copied = false;
-            }, 2000);
-        }, 100);
-    }
 </script>
 
 <div
@@ -53,19 +34,7 @@
 
     <div class="flex flex-row sm:gap-5 gap-3">
         <div class={rowClasses + " lg:flex hidden"}>
-            {#if copied}
-                <button class="btn-icon hover:cursor-default" disabled>
-                    <ClipboardCheckIcon />
-                </button>
-            {:else}
-                <button
-                    use:clipboard={file.data.checksum256}
-                    onclick={onClipboardClick}
-                    class="btn-icon variant-outline"
-                >
-                    <ClipboardIcon />
-                </button>
-            {/if}
+            <Clipboard content={file.data.checksum256} />
             <p class="sm:block hidden">Checksum</p>
         </div>
 
