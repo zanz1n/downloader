@@ -35,7 +35,8 @@ where
         .route("/:id/data", routing::get(download_file))
         .route("/", routing::post(upload_file))
         .route("/multipart", routing::post(upload_file_multipart))
-        .route("/:id", routing::put(update_file_data))
+        .route("/:id", routing::put(update_file))
+        .route("/:id/data", routing::put(update_file_data))
         .route("/:id/multipart", routing::put(update_file_data_multipart))
         .route("/:id", routing::delete(delete_file))
 }
@@ -61,6 +62,13 @@ const fn default_pagination_limit() -> u32 {
 
 const fn default_pagination_offset() -> u32 {
     0
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct UpdateFileRequestData {
+    pub name: String,
+    pub mime_type: String,
 }
 
 pub async fn get_all_files(
@@ -181,6 +189,36 @@ pub async fn upload_file_multipart(
     post_file_internal(token, repo, manager, reader, name, mime_type)
         .await
         .map(Json)
+}
+
+pub async fn update_file(
+    Authorization(token): Authorization,
+    Extension(repo): Extension<ObjectRepository<Sqlite>>,
+    Path(id): Path<Uuid>,
+    Json(data): Json<UpdateFileRequestData>,
+) -> Result<Json<Object>, DownloaderError> {
+    // Placed before to avoid unecessary database queries in case the
+    // write permission is missing
+    if !token.can_write_owned() {
+        return Err(AuthError::AccessDenied.into());
+    }
+
+    let can_access = match &token {
+        Token::User(user_token) => {
+            let obj = repo.get(id).await?;
+
+            obj.user_id == user_token.user_id || token.can_write_all()
+        }
+        Token::File(file_token) => file_token.file_id == id,
+        Token::Server => true,
+    };
+
+    if !can_access {
+        return Err(AuthError::AccessDenied.into());
+    }
+
+    let obj = repo.update_info(id, data.name, data.mime_type).await?;
+    Ok(Json(obj))
 }
 
 pub async fn update_file_data(

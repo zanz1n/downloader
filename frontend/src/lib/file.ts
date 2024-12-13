@@ -168,6 +168,22 @@ export class Files {
         return safeParse(fileSchema, res.value);
     }
 
+    async updateFileInfo(
+        id: string,
+        name: string,
+        mimeType: string
+    ): Promise<Result<File, AppError>> {
+        const res = await this.auth.fetch("PUT", `/file/${id}`, {
+            name,
+            mime_type: mimeType
+        });
+        if (res.isErr()) {
+            return res;
+        }
+
+        return safeParse(fileSchema, res.value);
+    }
+
     async updateFileData(
         id: string,
         name: string,
