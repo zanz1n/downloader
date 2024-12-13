@@ -13,7 +13,8 @@
         storePopup,
         AppShell,
         initializeStores,
-        Toast
+        Toast,
+        Modal
     } from "@skeletonlabs/skeleton";
     import Header from "$lib/components/Header.svelte";
 
@@ -24,6 +25,7 @@
 </script>
 
 <Toast />
+<Modal />
 
 <div class="w-screen h-screen">
     <AppShell>
