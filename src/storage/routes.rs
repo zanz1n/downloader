@@ -29,15 +29,15 @@ where
     S: Clone + Send + Sync + 'static,
 {
     router
-        .route("/:id/info", routing::get(get_file_information))
-        .route("/:id", routing::get(get_file))
         .route("/", routing::get(get_all_files))
-        .route("/user/:user_id/info", routing::get(get_by_user))
-        .route("/", routing::post(post_file))
+        .route("/user/:user_id", routing::get(get_files_by_user))
+        .route("/:id", routing::get(get_file))
+        .route("/:id/data", routing::get(download_file))
+        .route("/", routing::post(upload_file))
+        .route("/multipart", routing::post(upload_file_multipart))
+        .route("/:id", routing::put(update_file_data))
+        .route("/:id/multipart", routing::put(update_file_data_multipart))
         .route("/:id", routing::delete(delete_file))
-        .route("/:id", routing::put(update_file))
-        .route("/multipart", routing::post(post_file_multipart))
-        .route("/:id/multipart", routing::put(update_file_multipart))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,7 +63,44 @@ const fn default_pagination_offset() -> u32 {
     0
 }
 
-pub async fn get_file_information(
+pub async fn get_all_files(
+    Authorization(token): Authorization,
+    Extension(repo): Extension<ObjectRepository<Sqlite>>,
+    Query(data): Query<PaginationData>,
+) -> Result<Json<Vec<Object>>, DownloaderError> {
+    if !token.can_read_all() {
+        return Err(AuthError::AccessDenied.into());
+    }
+
+    repo.get_all(data.limit, data.offset)
+        .await
+        .map(Json)
+        .map_err(DownloaderError::Repository)
+}
+
+pub async fn get_files_by_user(
+    Authorization(token): Authorization,
+    Extension(repo): Extension<ObjectRepository<Sqlite>>,
+    Path(user_id): Path<Uuid>,
+    Query(data): Query<PaginationData>,
+) -> Result<Json<Vec<Object>>, DownloaderError> {
+    let can_access = token.can_read_all()
+        || match token {
+            Token::User(user_token) => user_token.user_id == user_id,
+            _ => false,
+        };
+
+    if !can_access {
+        return Err(AuthError::AccessDenied.into());
+    }
+
+    repo.get_by_user(user_id, data.limit, data.offset)
+        .await
+        .map(Json)
+        .map_err(DownloaderError::Repository)
+}
+
+pub async fn get_file(
     Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Path(id): Path<Uuid>,
@@ -84,7 +121,7 @@ pub async fn get_file_information(
     Ok(Json(object))
 }
 
-pub async fn get_file(
+pub async fn download_file(
     Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
@@ -116,44 +153,7 @@ pub async fn get_file(
         .map_err(DownloaderError::from)
 }
 
-pub async fn get_all_files(
-    Authorization(token): Authorization,
-    Extension(repo): Extension<ObjectRepository<Sqlite>>,
-    Query(data): Query<PaginationData>,
-) -> Result<Json<Vec<Object>>, DownloaderError> {
-    if !token.can_read_all() {
-        return Err(AuthError::AccessDenied.into());
-    }
-
-    repo.get_all(data.limit, data.offset)
-        .await
-        .map(Json)
-        .map_err(DownloaderError::Repository)
-}
-
-pub async fn get_by_user(
-    Authorization(token): Authorization,
-    Extension(repo): Extension<ObjectRepository<Sqlite>>,
-    Path(user_id): Path<Uuid>,
-    Query(data): Query<PaginationData>,
-) -> Result<Json<Vec<Object>>, DownloaderError> {
-    let can_access = token.can_read_all()
-        || match token {
-            Token::User(user_token) => user_token.user_id == user_id,
-            _ => false,
-        };
-
-    if !can_access {
-        return Err(AuthError::AccessDenied.into());
-    }
-
-    repo.get_by_user(user_id, data.limit, data.offset)
-        .await
-        .map(Json)
-        .map_err(DownloaderError::Repository)
-}
-
-pub async fn post_file(
+pub async fn upload_file(
     Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
@@ -168,7 +168,7 @@ pub async fn post_file(
         .map(Json)
 }
 
-pub async fn post_file_multipart(
+pub async fn upload_file_multipart(
     Authorization(token): Authorization,
     Extension(repo): Extension<ObjectRepository<Sqlite>>,
     Extension(manager): Extension<Arc<ObjectManager>>,
@@ -179,6 +179,38 @@ pub async fn post_file_multipart(
     // pin_mut!(reader);
 
     post_file_internal(token, repo, manager, reader, name, mime_type)
+        .await
+        .map(Json)
+}
+
+pub async fn update_file_data(
+    Authorization(token): Authorization,
+    Extension(repo): Extension<ObjectRepository<Sqlite>>,
+    Extension(manager): Extension<Arc<ObjectManager>>,
+    Path(id): Path<Uuid>,
+    Query(PostFileRequestData { name }): Query<PostFileRequestData>,
+    req: Request,
+) -> Result<Json<Object>, DownloaderError> {
+    let (reader, mime_type) = extract_request_body_file(req).await;
+    // pin_mut!(reader);
+
+    update_file_internal(token, repo, manager, id, reader, name, mime_type)
+        .await
+        .map(Json)
+}
+
+pub async fn update_file_data_multipart(
+    Authorization(token): Authorization,
+    Extension(repo): Extension<ObjectRepository<Sqlite>>,
+    Extension(manager): Extension<Arc<ObjectManager>>,
+    Path(id): Path<Uuid>,
+    mut multipart: Multipart,
+) -> Result<Json<Object>, DownloaderError> {
+    let (reader, name, mime_type) =
+        extract_multipart_file(&mut multipart).await?;
+    // pin_mut!(reader);
+
+    update_file_internal(token, repo, manager, id, reader, name, mime_type)
         .await
         .map(Json)
 }
@@ -222,38 +254,6 @@ pub async fn delete_file(
     });
 
     Ok(Json(obj))
-}
-
-pub async fn update_file(
-    Authorization(token): Authorization,
-    Extension(repo): Extension<ObjectRepository<Sqlite>>,
-    Extension(manager): Extension<Arc<ObjectManager>>,
-    Path(id): Path<Uuid>,
-    Query(PostFileRequestData { name }): Query<PostFileRequestData>,
-    req: Request,
-) -> Result<Json<Object>, DownloaderError> {
-    let (reader, mime_type) = extract_request_body_file(req).await;
-    // pin_mut!(reader);
-
-    update_file_internal(token, repo, manager, id, reader, name, mime_type)
-        .await
-        .map(Json)
-}
-
-pub async fn update_file_multipart(
-    Authorization(token): Authorization,
-    Extension(repo): Extension<ObjectRepository<Sqlite>>,
-    Extension(manager): Extension<Arc<ObjectManager>>,
-    Path(id): Path<Uuid>,
-    mut multipart: Multipart,
-) -> Result<Json<Object>, DownloaderError> {
-    let (reader, name, mime_type) =
-        extract_multipart_file(&mut multipart).await?;
-    // pin_mut!(reader);
-
-    update_file_internal(token, repo, manager, id, reader, name, mime_type)
-        .await
-        .map(Json)
 }
 
 async fn extract_multipart_file<'a>(
