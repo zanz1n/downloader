@@ -2,21 +2,15 @@
     import RefreshIcon from "$lib/assets/icons/RefreshIcon.svelte";
     import SearchIcon from "$lib/assets/icons/SearchIcon.svelte";
     import UploadIcon from "$lib/assets/icons/UploadIcon.svelte";
-    import FileModal from "$lib/components/file/FileModal.svelte";
     import FileRow from "$lib/components/file/FileRow.svelte";
-    import FileShare from "$lib/components/file/FileShare.svelte";
-    import { File, Files } from "$lib/file";
+    import { Files } from "$lib/file";
     import {
-        getModalStore,
         getToastStore,
         ProgressRadial,
-        SlideToggle,
-        type ModalComponent,
-        type ModalSettings
+        SlideToggle
     } from "@skeletonlabs/skeleton";
 
     const toastStore = getToastStore();
-    const modalStore = getModalStore();
     const files = Files.getInstance();
 
     const count = 10;
@@ -54,69 +48,6 @@
 
     function refresh() {
         updateCt++;
-    }
-
-    function deleteFile(file: File) {
-        function response(r: boolean) {
-            if (r) {
-                files.deleteFile(file.id).then((res) => {
-                    if (res.isOk()) {
-                        toastStore.trigger({
-                            message: `Deleted file "${res.value.data.name}"`,
-                            timeout: 2000,
-                            background: "variant-filled-success"
-                        });
-                    } else {
-                        toastStore.trigger({
-                            message:
-                                "Failed to delete file: " +
-                                res.error.toString(),
-                            timeout: 2000,
-                            background: "variant-filled-error"
-                        });
-                    }
-                    refresh();
-                });
-            }
-        }
-
-        const modal: ModalSettings = {
-            type: "confirm",
-            title: "Confirm deletion",
-            body: `Are you sure you want to delete the file "${file.data.name}"?`,
-            buttonTextConfirm: "Delete",
-            response
-        };
-
-        modalStore.trigger(modal);
-    }
-
-    function openFileInfo(file: File) {
-        const component: ModalComponent = {
-            ref: FileModal,
-            props: { file }
-        };
-
-        const modal: ModalSettings = {
-            type: "component",
-            component
-        };
-
-        modalStore.trigger(modal);
-    }
-
-    function shareFile(file: File) {
-        const component: ModalComponent = {
-            ref: FileShare,
-            props: { file }
-        };
-
-        const modal: ModalSettings = {
-            type: "component",
-            component
-        };
-
-        modalStore.trigger(modal);
     }
 </script>
 
@@ -159,7 +90,7 @@
         </div>
 
         <div class="input-group input-group-divider grid-cols-[auto_1fr_auto]">
-            <div class="input-group-shim hidden">
+            <div class="input-group-shim">
                 <SearchIcon />
             </div>
             <input type="search" placeholder="Search by name" />
@@ -178,12 +109,7 @@
         {:then data}
             {#if data.isOk()}
                 {#each data.value as file}
-                    <FileRow
-                        {file}
-                        triggerDelete={() => deleteFile(file)}
-                        triggerOpenInfo={() => openFileInfo(file)}
-                        triggerShare={() => shareFile(file)}
-                    />
+                    <FileRow {file} {refresh} />
                 {/each}
             {/if}
         {/await}
