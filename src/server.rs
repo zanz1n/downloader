@@ -228,7 +228,7 @@ where
         )
         .layer(SetResponseHeaderLayer::overriding(
             header::SERVER,
-            HeaderValue::from_static("axum/0.7.5"),
+            HeaderValue::from_static("axum/0.7"),
         ))
         .layer(CatchPanicLayer::custom(JsonPanicHandler))
         .layer(CorsLayer::permissive().max_age(Duration::from_secs(86400)))
@@ -243,7 +243,7 @@ where
             .layer(SetSensitiveHeadersLayer::new(once(header::AUTHORIZATION)))
             .layer(SetResponseHeaderLayer::overriding(
                 header::SERVER,
-                HeaderValue::from_static("axum/0.7.5"),
+                HeaderValue::from_static("axum/0.7"),
             ))
             .layer(CatchPanicLayer::new())
             .layer(RequestDecompressionLayer::new())
