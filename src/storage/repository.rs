@@ -188,13 +188,42 @@ where
 
         sqlx::query_as(
             "UPDATE object \
-            SET updated_at = $1, name = $2, mime_type = $3, checksum_256 = $4
-            WHERE id = $5 RETURNING *",
+            SET updated_at = $1, name = $2, mime_type = $3, \
+            size = $4, checksum_256 = $5 \
+            WHERE id = $6 RETURNING *",
         )
         .bind(now_ms)
         .bind(data.name)
         .bind(data.mime_type)
+        .bind(data.size as i64)
         .bind(data.checksum_256.as_slice())
+        .bind(id.into_bytes().as_slice())
+        .fetch_optional(&self.db)
+        .await
+        .map_err(|error| {
+            tracing::error!(%error, "got sqlx error while updating object");
+            RepositoryError::Sqlx(error)
+        })?
+        .ok_or(RepositoryError::NotFound(id))
+    }
+
+    pub async fn update_info(
+        &self,
+        id: Uuid,
+        name: String,
+        mime_type: String,
+    ) -> Result<Object, RepositoryError> {
+        let now = Utc::now();
+        let now_ms = now.timestamp_millis();
+
+        sqlx::query_as(
+            "UPDATE object \
+            SET updated_at = $1, name = $2, mime_type = $3
+            WHERE id = $4 RETURNING *",
+        )
+        .bind(now_ms)
+        .bind(name)
+        .bind(mime_type)
         .bind(id.into_bytes().as_slice())
         .fetch_optional(&self.db)
         .await
@@ -233,12 +262,35 @@ mod tests {
         Uuid::new_v4().to_string()
     }
 
+    fn rand_mime() -> String {
+        let r = (
+            rand::random::<bool>(),
+            rand::random::<bool>(),
+            rand::random::<bool>(),
+        );
+
+        match r {
+            (true, true, true) => mime::APPLICATION_JAVASCRIPT,
+            (true, true, false) => mime::APPLICATION_JSON,
+            (true, false, true) => mime::TEXT_PLAIN,
+            (true, false, false) => mime::TEXT_CSS,
+            (false, true, true) => mime::IMAGE_PNG,
+            (false, true, false) => mime::IMAGE_JPEG,
+            (false, false, true) => mime::APPLICATION_PDF,
+            (false, false, false) => mime::FONT_WOFF,
+        }
+        .to_string()
+    }
+
     fn rand_data() -> ObjectData {
         ObjectData {
             name: rand_string(),
-            mime_type: mime::TEXT_PLAIN.to_string(),
-            size: 0,
-            checksum_256: Sha256::new().finalize().into(),
+            mime_type: rand_mime(),
+            size: rand::random::<u32>() as u64,
+            checksum_256: Sha256::new()
+                .chain_update(rand::random::<[u8; 32]>())
+                .finalize()
+                .into(),
         }
     }
 
@@ -416,6 +468,36 @@ mod tests {
 
         let obj = repo.get(id).await.unwrap();
         assert_eq!(obj, old_obj, "fetched data mismatches the updated one");
+    }
+
+    #[test(tokio::test)]
+    async fn test_update_info() {
+        let repo = repository().await;
+
+        let data = rand_data();
+        let mut old_obj = repo
+            .create(Uuid::new_v4(), Uuid::new_v4(), data.clone())
+            .await
+            .unwrap();
+
+        let new_name = rand_string();
+        let new_mime_type = rand_mime();
+
+        let obj = repo
+            .update_info(old_obj.id, new_name.clone(), new_mime_type.clone())
+            .await
+            .unwrap();
+
+        assert!(obj.updated_at > old_obj.updated_at);
+
+        old_obj.data.name = new_name;
+        old_obj.data.mime_type = new_mime_type;
+        old_obj.updated_at = obj.updated_at;
+
+        assert_eq!(obj, old_obj);
+
+        let obj = repo.get(old_obj.id).await.unwrap();
+        assert_eq!(obj, old_obj);
     }
 
     #[test(tokio::test)]
