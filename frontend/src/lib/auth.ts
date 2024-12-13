@@ -47,7 +47,7 @@ export class Authenticator {
 
     private static INSTANCE: Authenticator | undefined;
 
-    constructor(url: string) {
+    private constructor(url: string) {
         this.url = url;
     }
 
@@ -59,28 +59,40 @@ export class Authenticator {
         return this.INSTANCE;
     }
 
-    private getAuthToken(): string | null {
+    private _getAuthToken(): string | null {
         return localStorage.getItem("auth_token");
     }
 
-    private setAuthToken(token: string) {
+    private _setAuthToken(token: string) {
         return localStorage.setItem("auth_token", token);
     }
 
-    private removeAuthToken() {
+    private _removeAuthToken() {
         return localStorage.removeItem("auth_token");
+    }
+
+    getApiUrl(): string {
+        return this.url;
+    }
+
+    getToken(): Option<string> {
+        const tk = this._getAuthToken();
+        if (tk) {
+            return Some(tk);
+        }
+        return None;
     }
 
     getAuth(): Option<Auth> {
         try {
-            const dataS = this.getAuthToken();
+            const dataS = this._getAuthToken();
             if (!dataS) {
                 return None;
             }
 
             const data = authSchema.parse(jwtDecode(dataS));
             if (new Date() >= data.expiresAt) {
-                this.removeAuthToken();
+                this._removeAuthToken();
                 return None;
             }
 
@@ -93,7 +105,7 @@ export class Authenticator {
 
     logout() {
         try {
-            this.removeAuthToken();
+            this._removeAuthToken();
         } catch (e) {
             console.error("Authenticator.logout gone wrong:", e);
         }
@@ -101,24 +113,18 @@ export class Authenticator {
 
     async getUser(): Promise<Result<User, AppError>> {
         try {
-            const res = await this.fetch("/user/self", null);
+            const res = await this.fetch("GET", "/user/self", null);
             if (!res.isOk()) {
                 return Err(res.error);
             }
 
-            const json = await res.value.json();
-            if (!res.value.ok) {
-                const error = appErrorSchema.parse(json);
-                return Err(error);
-            }
-
-            const user = userSchema.parse(json);
+            const user = userSchema.parse(await res.value.json());
             return Ok(user);
         } catch (e) {
             if (e instanceof Error) {
-                return Err(new AppError(e.message, 0));
+                return Err(new AppError(e.message));
             }
-            return Err(new AppError("Unknown", 0));
+            return Err(new AppError("Unknown"));
         }
     }
 
@@ -140,14 +146,14 @@ export class Authenticator {
             }
 
             const resData = loggedInSchema.parse(json);
-            this.setAuthToken(resData.token);
+            this._setAuthToken(resData.token);
 
             return Ok(resData.user);
         } catch (e) {
             if (e instanceof Error) {
-                return Err(new AppError(e.message, 0));
+                return Err(new AppError(e.message));
             }
-            return Err(new AppError("Unknown", 0));
+            return Err(new AppError("Unknown"));
         }
     }
 
@@ -173,14 +179,14 @@ export class Authenticator {
             }
 
             const resData = loggedInSchema.parse(json);
-            this.setAuthToken(resData.token);
+            this._setAuthToken(resData.token);
 
             return Ok(resData.user);
         } catch (e) {
             if (e instanceof Error) {
-                return Err(new AppError(e.message, 0));
+                return Err(new AppError(e.message));
             }
-            return Err(new AppError("Unknown", 0));
+            return Err(new AppError("Unknown"));
         }
     }
 
@@ -191,7 +197,7 @@ export class Authenticator {
         try {
             const token = this.getAuth();
             if (token.isNone()) {
-                return Err(new AppError("Unauthorized", 0));
+                return Err(new AppError("Unauthenticated", 401));
             }
 
             const data = {
@@ -216,25 +222,26 @@ export class Authenticator {
             }
 
             const resData = loggedInSchema.parse(json);
-            this.setAuthToken(resData.token);
+            this._setAuthToken(resData.token);
 
             return Ok(resData.user);
         } catch (e) {
             if (e instanceof Error) {
-                return Err(new AppError(e.message, 0));
+                return Err(new AppError(e.message));
             }
-            return Err(new AppError("Unknown", 0));
+            return Err(new AppError("Unknown"));
         }
     }
 
     async fetch(
+        method: string,
         input: string,
-        data: unknown
+        data?: unknown
     ): Promise<Result<Response, AppError>> {
         try {
-            const token = this.getAuthToken();
+            const token = this._getAuthToken();
             if (!token) {
-                return Err(new AppError("Unauthorized", 0));
+                return Err(new AppError("Unauthenticated", 401));
             }
 
             const headers = {
@@ -250,15 +257,22 @@ export class Authenticator {
 
             const res = await fetch(this.url + input, {
                 body,
-                headers
+                headers,
+                method
             });
+
+            if (!res.ok) {
+                const json = await res.json();
+                const err = appErrorSchema.parse(json);
+                return Err(err);
+            }
 
             return Ok(res);
         } catch (e) {
             if (e instanceof Error) {
-                return Err(new AppError(e.message, 0));
+                return Err(new AppError(e.message));
             }
-            return Err(new AppError("Unknown", 0));
+            return Err(new AppError("Unknown"));
         }
     }
 }
