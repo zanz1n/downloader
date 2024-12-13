@@ -17,9 +17,11 @@
         file: File;
         triggerDelete: () => void;
         triggerOpenInfo: () => void;
+        triggerShare: () => void;
     };
 
-    let { file, triggerDelete, triggerOpenInfo }: Props = $props();
+    let { file, triggerDelete, triggerOpenInfo, triggerShare }: Props =
+        $props();
 
     let copied = $state(false);
 
@@ -85,7 +87,10 @@
         </div>
 
         <div class={rowClasses}>
-            <button class="btn-icon variant-ghost-tertiary">
+            <button
+                class="btn-icon variant-ghost-tertiary"
+                onclick={triggerShare}
+            >
                 <ShareNodesIcon />
             </button>
             <p class="sm:block hidden">Share</p>
