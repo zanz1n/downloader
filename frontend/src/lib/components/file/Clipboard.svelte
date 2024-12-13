@@ -1,5 +1,6 @@
 <script lang="ts">
     import ClipboardCheckIcon from "$lib/assets/icons/ClipboardCheckIcon.svelte";
+    import ClipboardIcon from "$lib/assets/icons/ClipboardIcon.svelte";
     import { clipboard, getToastStore } from "@skeletonlabs/skeleton";
 
     const toastStore = getToastStore();
@@ -38,6 +39,6 @@
     </button>
 {:else}
     <button class={classes} use:clipboard={content} onclick={onClipboardClick}>
-        <ClipboardCheckIcon />
+        <ClipboardIcon />
     </button>
 {/if}
