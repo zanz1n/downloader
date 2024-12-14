@@ -34,11 +34,16 @@
 </script>
 
 {#if copied}
-    <button class={activeClasses} disabled>
+    <button type="button" class={activeClasses} disabled>
         <ClipboardCheckIcon />
     </button>
 {:else}
-    <button class={classes} use:clipboard={content} onclick={onClipboardClick}>
+    <button
+        type="button"
+        class={classes}
+        use:clipboard={content}
+        onclick={onClipboardClick}
+    >
         <ClipboardIcon />
     </button>
 {/if}
