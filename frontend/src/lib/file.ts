@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { Authenticator } from "./auth";
-import { Err, Ok, type Result } from "ts-results-es";
+import { Err, Ok, Result } from "ts-results-es";
 import { AppError } from "./error";
 import { safeParse } from "./utils";
 
@@ -122,14 +122,17 @@ export class Files {
 
     async getUserFiles(
         limit: number,
-        offset = 0
+        offset = 0,
+        userId?: string
     ): Promise<Result<File[], AppError>> {
-        const user = this.auth.getAuth();
-        if (user.isNone()) {
-            return Err(new AppError("Unauthorized"));
-        }
+        if (!userId) {
+            const user = this.auth.getAuth();
+            if (user.isNone()) {
+                return Err(new AppError("Unauthorized"));
+            }
 
-        const { userId } = user.value;
+            userId = user.value.userId;
+        }
 
         const res = await this.auth.fetch(
             "GET",
@@ -155,10 +158,7 @@ export class Files {
         name: string,
         data: Blob
     ): Promise<Result<File, AppError>> {
-        const formData = new FormData();
-        formData.append("file", data, name);
-
-        const res = await this.auth.fetch("POST", "/file/multipart", formData);
+        const res = await this.auth.fetch("POST", "/file", data);
         if (res.isErr()) {
             return res;
         }
@@ -186,25 +186,62 @@ export class Files {
         id: string,
         name: string,
         data: Blob,
-        mimeType?: string
+        mimeType?: string,
+        progress?: (loaded: number, total: number) => void
     ): Promise<Result<File, AppError>> {
         if (mimeType) {
             data = data.slice(0, data.size, mimeType);
         }
 
-        const formData = new FormData();
-        formData.append("file", data, name);
-
-        const res = await this.auth.fetch(
-            "PUT",
-            `/file/${id}/multipart`,
-            formData
-        );
-        if (res.isErr()) {
-            return res;
+        const token = this.auth.getToken();
+        if (token.isNone()) {
+            return Err(new AppError("Unauthenticated", 401));
         }
 
-        return safeParse(fileSchema, res.value);
+        try {
+            const xhr = new XMLHttpRequest();
+
+            if (progress) {
+                xhr.upload.addEventListener("progress", (event) => {
+                    progress(event.loaded, event.total);
+                });
+            }
+
+            const promise = new Promise((res) =>
+                xhr.addEventListener("loadend", res)
+            )
+                .then(Ok)
+                .catch((e) =>
+                    Err(
+                        e instanceof Error
+                            ? new AppError(e.message)
+                            : new AppError("Unknown")
+                    )
+                );
+
+            xhr.open(
+                "PUT",
+                this.auth.getApiUrl() + `/file/${id}/data?name=${name}`,
+                true
+            );
+
+            xhr.setRequestHeader("Authorization", "Bearer " + token.value);
+            xhr.setRequestHeader("Content-Type", data.type);
+
+            xhr.send(data);
+
+            const res = await promise;
+            if (res.isErr()) return res;
+
+            const json = JSON.parse(xhr.responseText);
+            const file = fileSchema.parse(json);
+            return Ok(file);
+        } catch (e) {
+            if (e instanceof Error) {
+                return Err(new AppError(e.message));
+            }
+            return Err(new AppError("Unknown"));
+        }
     }
 
     async deleteFile(id: string): Promise<Result<File, AppError>> {
