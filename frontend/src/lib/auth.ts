@@ -253,6 +253,9 @@ export class Authenticator {
             if (data) {
                 if (data instanceof FormData) {
                     body = data;
+                } else if (data instanceof Blob) {
+                    body = data;
+                    headers["Content-Type"] = data.type;
                 } else {
                     headers["Content-Type"] = "application/json";
                     body = JSON.stringify(data);
