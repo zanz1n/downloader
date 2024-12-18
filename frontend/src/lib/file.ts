@@ -81,8 +81,6 @@ export class File {
         }
         size = Math.round(size * 100) / 100;
 
-        console.log(`${size} ${this.data.size}`);
-
         return size.toString() + " " + unit;
     }
 }
@@ -187,8 +185,13 @@ export class Files {
     async updateFileData(
         id: string,
         name: string,
-        data: Blob
+        data: Blob,
+        mimeType?: string
     ): Promise<Result<File, AppError>> {
+        if (mimeType) {
+            data = data.slice(0, data.size, mimeType);
+        }
+
         const formData = new FormData();
         formData.append("file", data, name);
 
