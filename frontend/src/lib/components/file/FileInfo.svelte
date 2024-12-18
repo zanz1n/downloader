@@ -8,8 +8,6 @@
     } from "@skeletonlabs/skeleton";
     import Clipboard from "./Clipboard.svelte";
     import CloudUploadIcon from "$lib/assets/icons/CloudUploadIcon.svelte";
-    import { AppError } from "$lib/error";
-    import { Err, None, Option } from "ts-results-es";
 
     const files = Files.getInstance();
 
