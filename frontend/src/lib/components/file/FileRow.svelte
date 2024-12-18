@@ -11,7 +11,7 @@
     } from "@skeletonlabs/skeleton";
     import Clipboard from "./Clipboard.svelte";
     import FileShare from "./FileShare.svelte";
-    import FileInfo from "./FileModal.svelte";
+    import FileInfo from "./FileInfo.svelte";
 
     const rowClasses =
         "flex flex-col justify-center items-center xl:w-20 sm:w-16";
@@ -65,14 +65,14 @@
     function triggerInfo() {
         modalStore.trigger({
             type: "component",
-            component: { ref: FileInfo, props: { file } }
+            component: { ref: FileInfo, props: { file, refresh } }
         });
     }
 
     function triggerShare() {
         modalStore.trigger({
             type: "component",
-            component: { ref: FileShare, props: { file } }
+            component: { ref: FileShare, props: { file, refresh } }
         });
     }
 </script>
