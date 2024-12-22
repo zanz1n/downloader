@@ -7,11 +7,11 @@ use axum::{
     response::Response,
     routing, Extension, Router,
 };
-use futures_util::TryStreamExt;
+use bytes::Bytes;
+use futures_util::{Stream, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use sqlx::Sqlite;
-use tokio::io::AsyncRead;
-use tokio_util::io::{ReaderStream, StreamReader};
+use tokio_util::io::ReaderStream;
 use tracing::Instrument;
 use uuid::Uuid;
 
@@ -168,10 +168,9 @@ pub async fn upload_file(
     Query(PostFileRequestData { name }): Query<PostFileRequestData>,
     req: Request,
 ) -> Result<Json<Object>, DownloaderError> {
-    let (reader, mime_type) = extract_request_body_file(req).await;
-    // pin_mut!(reader);
+    let (stream, mime_type) = extract_request_body_file(req);
 
-    post_file_internal(token, repo, manager, reader, name, mime_type)
+    post_file_internal(token, repo, manager, stream, name, mime_type)
         .await
         .map(Json)
 }
@@ -182,11 +181,10 @@ pub async fn upload_file_multipart(
     Extension(manager): Extension<Arc<ObjectManager>>,
     mut multipart: Multipart,
 ) -> Result<Json<Object>, DownloaderError> {
-    let (reader, name, mime_type) =
+    let (stream, name, mime_type) =
         extract_multipart_file(&mut multipart).await?;
-    // pin_mut!(reader);
 
-    post_file_internal(token, repo, manager, reader, name, mime_type)
+    post_file_internal(token, repo, manager, stream, name, mime_type)
         .await
         .map(Json)
 }
@@ -229,10 +227,10 @@ pub async fn update_file_data(
     Query(PostFileRequestData { name }): Query<PostFileRequestData>,
     req: Request,
 ) -> Result<Json<Object>, DownloaderError> {
-    let (reader, mime_type) = extract_request_body_file(req).await;
+    let (stream, mime_type) = extract_request_body_file(req);
     // pin_mut!(reader);
 
-    update_file_internal(token, repo, manager, id, reader, name, mime_type)
+    update_file_internal(token, repo, manager, id, stream, name, mime_type)
         .await
         .map(Json)
 }
@@ -244,11 +242,11 @@ pub async fn update_file_data_multipart(
     Path(id): Path<Uuid>,
     mut multipart: Multipart,
 ) -> Result<Json<Object>, DownloaderError> {
-    let (reader, name, mime_type) =
+    let (stream, name, mime_type) =
         extract_multipart_file(&mut multipart).await?;
     // pin_mut!(reader);
 
-    update_file_internal(token, repo, manager, id, reader, name, mime_type)
+    update_file_internal(token, repo, manager, id, stream, name, mime_type)
         .await
         .map(Json)
 }
@@ -298,12 +296,9 @@ async fn extract_multipart_file<'a>(
     multipart: &'a mut Multipart,
 ) -> Result<
     (
-        StreamReader<
-            futures_util::stream::MapErr<
-                axum::extract::multipart::Field<'a>,
-                impl FnMut(MultipartError) -> io::Error,
-            >,
-            axum::body::Bytes,
+        futures_util::stream::MapErr<
+            axum::extract::multipart::Field<'a>,
+            impl FnMut(MultipartError) -> io::Error,
         >,
         String,
         String,
@@ -332,18 +327,15 @@ async fn extract_multipart_file<'a>(
     let field_stream =
         field.map_err(|err| io::Error::new(io::ErrorKind::Other, err));
 
-    Ok((StreamReader::new(field_stream), name, mime_type))
+    Ok((field_stream, name, mime_type))
 }
 
-async fn extract_request_body_file(
+fn extract_request_body_file(
     req: Request,
 ) -> (
-    StreamReader<
-        futures_util::stream::MapErr<
-            axum::body::BodyDataStream,
-            impl FnMut(axum::Error) -> io::Error,
-        >,
-        axum::body::Bytes,
+    futures_util::stream::MapErr<
+        axum::body::BodyDataStream,
+        impl FnMut(axum::Error) -> io::Error,
     >,
     String,
 ) {
@@ -359,16 +351,14 @@ async fn extract_request_body_file(
     let stream =
         stream.map_err(|err| io::Error::new(io::ErrorKind::Other, err));
 
-    let reader = StreamReader::new(stream);
-
-    (reader, mime_type)
+    (stream, mime_type)
 }
 
 async fn post_file_internal(
     token: Token,
     repo: ObjectRepository<Sqlite>,
     manager: Arc<ObjectManager>,
-    reader: impl AsyncRead + Unpin,
+    stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin,
     name: String,
     mime_type: String,
 ) -> Result<Object, DownloaderError> {
@@ -381,7 +371,7 @@ async fn post_file_internal(
     };
 
     let id = Uuid::new_v4();
-    let (size, checksum_256) = manager.store(id, reader).await?;
+    let (size, checksum_256) = manager.store(id, stream).await?;
 
     let data = ObjectData {
         name,
@@ -419,7 +409,7 @@ async fn update_file_internal(
     repo: ObjectRepository<Sqlite>,
     manager: Arc<ObjectManager>,
     id: Uuid,
-    reader: impl AsyncRead + Unpin,
+    stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin,
     name: String,
     mime_type: String,
 ) -> Result<Object, DownloaderError> {
@@ -443,7 +433,7 @@ async fn update_file_internal(
         return Err(AuthError::AccessDenied.into());
     }
 
-    let (size, checksum_256) = manager.store(id, reader).await?;
+    let (size, checksum_256) = manager.store(id, stream).await?;
 
     repo.update(
         id,

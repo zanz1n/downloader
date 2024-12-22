@@ -5,10 +5,12 @@ use std::{
 };
 
 use axum::http::StatusCode;
+use bytes::Bytes;
+use futures_util::{Stream, StreamExt};
 use sha2::Sha256;
 use tokio::{
     fs::{remove_file, rename, File},
-    io::{copy, AsyncRead},
+    io::{AsyncRead, AsyncWrite, AsyncWriteExt, BufReader, BufWriter},
 };
 use tracing::instrument;
 use uuid::Uuid;
@@ -16,7 +18,7 @@ use uuid::Uuid;
 use crate::{
     config::StorageConfig,
     utils::{
-        crypto::HashRead,
+        crypto::HashStream,
         fmt::{fmt_hex, fmt_since},
     },
 };
@@ -62,13 +64,13 @@ impl ObjectManager {
 }
 
 impl ObjectManager {
-    #[instrument(target = "object_fs", name = "store", skip(self, reader))]
+    #[instrument(target = "object_fs", name = "store", skip(self, stream))]
     pub async fn store(
         &self,
         id: Uuid,
-        reader: impl AsyncRead + Unpin,
+        stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin,
     ) -> Result<(u64, [u8; 32]), ObjectError> {
-        let mut reader = HashRead::<_, Sha256>::new(reader);
+        let mut stream = HashStream::<_, Sha256>::new(stream);
 
         let start = Instant::now();
 
@@ -77,7 +79,7 @@ impl ObjectManager {
         let id = id.to_string();
         let temp_dir = self.temp_dir.join(format!("{id}-incomplete"));
 
-        let mut file = File::create(&temp_dir).await.map_err(|error| {
+        let file = File::create(&temp_dir).await.inspect_err(|error| {
             tracing::error!(
                 target: "object_fs",
                 %error,
@@ -85,10 +87,11 @@ impl ObjectManager {
                 took = %fmt_since(start),
                 "create file failed",
             );
-            error
         })?;
 
-        let size = match copy(&mut reader, &mut file).await {
+        let mut file = BufWriter::with_capacity(1024 * 1024, file);
+
+        let size = match copy_impl(&mut stream, &mut file).await {
             Ok(v) => v,
             Err(error) => {
                 tracing::warn!(
@@ -135,7 +138,7 @@ impl ObjectManager {
             return Err(error.into());
         }
 
-        let hash: [u8; 32] = reader.hash_into();
+        let hash: [u8; 32] = stream.hash_into();
 
         tracing::info!(
             target: "object_fs",
@@ -175,13 +178,32 @@ impl ObjectManager {
             }
         })?;
 
+        let file_size = file
+            .metadata()
+            .await
+            .map(|meta| meta.len())
+            .inspect_err(|error| {
+                tracing::error!(
+                    target: "object_fs",
+                    %error,
+                    took = %fmt_since(start),
+                    path = ?path,
+                    "fetch file metadata failed",
+                );
+            })
+            .ok();
+
+        debug_assert_ne!(file_size, None);
+
         tracing::info!(
             target: "object_fs",
             took = %fmt_since(start),
             "fetched file stream",
         );
 
-        Ok(file)
+        let buf_cap = buffer_cap(file_size) as usize;
+
+        Ok(BufReader::with_capacity(buf_cap, file))
     }
 
     #[instrument(target = "object_fs", name = "delete", skip(self))]
@@ -212,23 +234,65 @@ impl ObjectManager {
     }
 }
 
+#[inline]
+const fn buffer_cap(file_size: Option<u64>) -> u64 {
+    const DEFAULT_BUFFER_CAP: u64 = 8 * 1024;
+
+    if let Some(file_size) = file_size {
+        if file_size >= 1024 * 1024 * 1024 {
+            8 * 1024 * 1024
+        } else if file_size >= 8 * 1024 * 1024 {
+            1024 * 1024
+        } else if file_size >= 1024 * 1024 {
+            128 * 1024
+        } else {
+            DEFAULT_BUFFER_CAP
+        }
+    } else {
+        DEFAULT_BUFFER_CAP
+    }
+}
+
+pub(super) async fn copy_impl<S, W>(
+    stream: &mut S,
+    writer: &mut W,
+) -> io::Result<u64>
+where
+    S: Stream<Item = Result<Bytes, io::Error>> + Unpin,
+    W: AsyncWrite + Unpin,
+{
+    let mut n = 0;
+    while let Some(res) = stream.next().await {
+        match res {
+            Ok(v) => {
+                writer.write_all(&v).await?;
+                n += v.len();
+            }
+            Err(err) => return Err(err),
+        }
+    }
+
+    writer.flush().await?;
+    Ok(n as u64)
+}
+
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
+    use std::io::{self, Write};
 
+    use bytes::Bytes;
+    use futures_util::Stream;
     use rand::RngCore;
     use sha2::{Digest, Sha256};
     use tempfile::TempDir;
     use test_log::test;
-    use tokio::{
-        fs::File,
-        io::{copy, AsyncRead},
-    };
+    use tokio::{fs::File, io::copy};
+    use tokio_util::io::ReaderStream;
     use uuid::Uuid;
 
-    use crate::{storage::manager::ObjectError, utils::crypto::HashRead};
+    use crate::utils::crypto::HashRead;
 
-    use super::ObjectManager;
+    use super::*;
 
     #[allow(dead_code, reason = "this is a struct to hold ownership of data")]
     struct TempHolder {
@@ -253,7 +317,10 @@ mod tests {
     async fn create_rand_file(
         holder: &TempHolder,
         size: usize,
-    ) -> (impl AsyncRead + Unpin, [u8; 32]) {
+    ) -> (
+        impl Stream<Item = Result<Bytes, io::Error>> + Unpin,
+        [u8; 32],
+    ) {
         // Intentionally not 1024 * 1024
         // To detect wrong offsets while copying IO data
         let mut buf = vec![0u8; 1000 * 1000];
@@ -274,7 +341,7 @@ mod tests {
         let file = File::open(path).await.unwrap();
         let hash: [u8; 32] = hash.finalize().into();
 
-        (file, hash)
+        (ReaderStream::with_capacity(file, 8192), hash)
     }
 
     #[test(tokio::test)]

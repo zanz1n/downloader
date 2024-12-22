@@ -1,5 +1,10 @@
-use std::task::Poll;
+use std::{
+    pin::Pin,
+    task::{Context, Poll},
+};
 
+use bytes::Bytes;
+use futures_util::Stream;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use pin_project_lite::pin_project;
 use sha2::{digest::Output, Digest};
@@ -55,6 +60,51 @@ impl<T: AsyncRead, H: Digest> AsyncRead for HashRead<T, H> {
                 Poll::Ready(Ok(()))
             }
         }
+    }
+}
+
+pin_project! {
+    pub struct HashStream<S, H> {
+        #[pin]
+        stream: S,
+        hasher: H,
+    }
+}
+
+impl<S, H: Digest> HashStream<S, H> {
+    pub fn new(stream: S) -> Self {
+        let hasher = H::new();
+        Self { stream, hasher }
+    }
+
+    #[inline]
+    pub fn hash(self) -> Output<H> {
+        self.hasher.finalize()
+    }
+
+    #[inline]
+    pub fn hash_into<I: From<Output<H>>>(self) -> I {
+        self.hash().into()
+    }
+}
+
+impl<S, H, E> Stream for HashStream<S, H>
+where
+    S: Stream<Item = Result<Bytes, E>>,
+    H: Digest,
+{
+    type Item = Result<Bytes, E>;
+
+    fn poll_next(
+        self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Self::Item>> {
+        let this = self.project();
+        let poll = this.stream.poll_next(cx);
+        if let Poll::Ready(Some(Ok(v))) = &poll {
+            this.hasher.update(&v);
+        }
+        poll
     }
 }
 
