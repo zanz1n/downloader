@@ -82,3 +82,9 @@ sqlx = { version = "0.8", default-features = false, features = [
 rand = "0.8"
 tempfile = "3"
 test-log = { version = "0.2", features = ["trace"] }
+
+criterion = { version = "0.5", features = ["async_tokio"] }
+
+[[bench]]
+name = "object_manager"
+harness = false
