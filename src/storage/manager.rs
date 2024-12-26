@@ -10,7 +10,7 @@ use futures_util::{Stream, StreamExt};
 use sha2::Sha256;
 use tokio::{
     fs::{remove_file, rename, File},
-    io::{AsyncRead, AsyncWrite, AsyncWriteExt, BufReader, BufWriter},
+    io::{AsyncRead, AsyncWriteExt},
 };
 use tracing::instrument;
 use uuid::Uuid;
@@ -79,7 +79,7 @@ impl ObjectManager {
         let id = id.to_string();
         let temp_dir = self.temp_dir.join(format!("{id}-incomplete"));
 
-        let file = File::create(&temp_dir).await.inspect_err(|error| {
+        let mut file = File::create(&temp_dir).await.inspect_err(|error| {
             tracing::error!(
                 target: "object_fs",
                 %error,
@@ -88,8 +88,6 @@ impl ObjectManager {
                 "create file failed",
             );
         })?;
-
-        let mut file = BufWriter::with_capacity(1024 * 1024, file);
 
         let size = match copy_impl(&mut stream, &mut file).await {
             Ok(v) => v,
@@ -163,7 +161,7 @@ impl ObjectManager {
         let id = id.to_string();
         let path = self.data_dir.join(&id);
 
-        let file = File::open(&path).await.map_err(|error| {
+        let mut file = File::open(&path).await.map_err(|error| {
             if error.kind() == ErrorKind::NotFound {
                 ObjectError::NotFound
             } else {
@@ -201,9 +199,10 @@ impl ObjectManager {
             "fetched file stream",
         );
 
-        let buf_cap = buffer_cap(file_size) as usize;
+        let max_buf_size = buffer_cap(file_size.unwrap_or_default()) as usize;
+        file.set_max_buf_size(max_buf_size);
 
-        Ok(BufReader::with_capacity(buf_cap, file))
+        Ok(file)
     }
 
     #[instrument(target = "object_fs", name = "delete", skip(self))]
@@ -235,44 +234,33 @@ impl ObjectManager {
 }
 
 #[inline]
-const fn buffer_cap(file_size: Option<u64>) -> u64 {
-    const DEFAULT_BUFFER_CAP: u64 = 8 * 1024;
+const fn buffer_cap(file_size: u64) -> usize {
+    const DEFAULT_BUFFER_CAP: usize = 2 * 1024 * 1024;
 
-    if let Some(file_size) = file_size {
-        if file_size >= 1024 * 1024 * 1024 {
-            8 * 1024 * 1024
-        } else if file_size >= 8 * 1024 * 1024 {
-            1024 * 1024
-        } else if file_size >= 1024 * 1024 {
-            128 * 1024
-        } else {
-            DEFAULT_BUFFER_CAP
-        }
+    if file_size >= 1024 * 1024 * 1024 {
+        8 * 1024 * 1024
     } else {
         DEFAULT_BUFFER_CAP
     }
 }
 
-pub(super) async fn copy_impl<S, W>(
-    stream: &mut S,
-    writer: &mut W,
-) -> io::Result<u64>
+pub async fn copy_impl<S>(mut stream: S, file: &mut File) -> io::Result<u64>
 where
     S: Stream<Item = Result<Bytes, io::Error>> + Unpin,
-    W: AsyncWrite + Unpin,
 {
     let mut n = 0;
     while let Some(res) = stream.next().await {
         match res {
             Ok(v) => {
-                writer.write_all(&v).await?;
+                file.write_all(&v).await?;
                 n += v.len();
             }
             Err(err) => return Err(err),
         }
     }
 
-    writer.flush().await?;
+    file.flush().await?;
+    file.sync_all().await?;
     Ok(n as u64)
 }
 
