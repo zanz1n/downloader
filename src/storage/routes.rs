@@ -22,7 +22,11 @@ use crate::{
     utils::extractors::{Json, Query},
 };
 
-use super::{manager::ObjectManager, repository::ObjectRepository, Object};
+use super::{
+    manager::{Manager, ObjectManager},
+    repository::ObjectRepository,
+    Object,
+};
 
 pub fn file_routes<S>(router: Router<S>) -> Router<S>
 where
@@ -358,7 +362,7 @@ async fn post_file_internal(
     token: Token,
     repo: ObjectRepository<Sqlite>,
     manager: Arc<ObjectManager>,
-    stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin,
+    stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin + Send,
     name: String,
     mime_type: String,
 ) -> Result<Object, DownloaderError> {
@@ -409,7 +413,7 @@ async fn update_file_internal(
     repo: ObjectRepository<Sqlite>,
     manager: Arc<ObjectManager>,
     id: Uuid,
-    stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin,
+    stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin + Send,
     name: String,
     mime_type: String,
 ) -> Result<Object, DownloaderError> {

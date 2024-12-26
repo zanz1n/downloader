@@ -4,7 +4,6 @@ use std::{
     time::Instant,
 };
 
-use axum::http::StatusCode;
 use bytes::Bytes;
 use futures_util::{Stream, StreamExt};
 use sha2::Sha256;
@@ -23,38 +22,14 @@ use crate::{
     },
 };
 
-#[derive(Debug, thiserror::Error)]
-pub enum ObjectError {
-    #[error("io error in file system: {0}")]
-    IoError(#[from] io::Error),
-    #[error("file not found")]
-    NotFound,
-}
+use super::{Manager, ObjectError};
 
-impl ObjectError {
-    #[inline]
-    pub fn status_code(&self) -> StatusCode {
-        match self {
-            ObjectError::IoError(..) => StatusCode::INTERNAL_SERVER_ERROR,
-            ObjectError::NotFound => StatusCode::NOT_FOUND,
-        }
-    }
-
-    #[inline]
-    pub fn custom_code(&self) -> u8 {
-        match self {
-            ObjectError::IoError(..) => 1,
-            ObjectError::NotFound => 2,
-        }
-    }
-}
-
-pub struct ObjectManager {
+pub struct SyncFsManager {
     data_dir: PathBuf,
     temp_dir: PathBuf,
 }
 
-impl ObjectManager {
+impl SyncFsManager {
     pub fn new(cfg: &StorageConfig) -> Self {
         Self {
             data_dir: PathBuf::from(cfg.data_dir.as_str()),
@@ -63,12 +38,12 @@ impl ObjectManager {
     }
 }
 
-impl ObjectManager {
+impl Manager for SyncFsManager {
     #[instrument(target = "object_fs", name = "store", skip(self, stream))]
-    pub async fn store(
+    async fn store(
         &self,
         id: Uuid,
-        stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin,
+        stream: impl Stream<Item = Result<Bytes, io::Error>> + Unpin + Send,
     ) -> Result<(u64, [u8; 32]), ObjectError> {
         let mut stream = HashStream::<_, Sha256>::new(stream);
 
@@ -150,10 +125,10 @@ impl ObjectManager {
     }
 
     #[instrument(target = "object_fs", name = "fetch", skip(self))]
-    pub async fn fetch(
+    async fn fetch(
         &self,
         id: Uuid,
-    ) -> Result<impl AsyncRead + Unpin, ObjectError> {
+    ) -> Result<impl AsyncRead + Unpin + Send + 'static, ObjectError> {
         let start = Instant::now();
 
         tracing::info!(target: "object_fs", "starting fetch");
@@ -206,7 +181,7 @@ impl ObjectManager {
     }
 
     #[instrument(target = "object_fs", name = "delete", skip(self))]
-    pub async fn delete(&self, id: Uuid) -> Result<(), ObjectError> {
+    async fn delete(&self, id: Uuid) -> Result<(), ObjectError> {
         let start = Instant::now();
 
         tracing::info!(target: "object_fs", "starting delete");
@@ -266,34 +241,16 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, Write};
-
-    use bytes::Bytes;
-    use futures_util::Stream;
-    use rand::RngCore;
-    use sha2::{Digest, Sha256};
-    use tempfile::TempDir;
-    use test_log::test;
-    use tokio::{fs::File, io::copy};
-    use tokio_util::io::ReaderStream;
-    use uuid::Uuid;
-
-    use crate::utils::crypto::HashRead;
+    use crate::storage::manager::test_utils::TempHolder;
 
     use super::*;
 
-    #[allow(dead_code, reason = "this is a struct to hold ownership of data")]
-    struct TempHolder {
-        data_dir: TempDir,
-        temp_dir: TempDir,
-    }
-
-    fn repository() -> (ObjectManager, TempHolder) {
+    fn repository() -> (SyncFsManager, TempHolder) {
         let data_dir = tempfile::tempdir().unwrap();
         let temp_dir = tempfile::tempdir().unwrap();
 
         (
-            ObjectManager {
+            SyncFsManager {
                 data_dir: data_dir.path().to_owned(),
                 temp_dir: temp_dir.path().to_owned(),
             },
@@ -301,102 +258,16 @@ mod tests {
         )
     }
 
-    /// size is in MB
-    async fn create_rand_file(
-        holder: &TempHolder,
-        size: usize,
-    ) -> (
-        impl Stream<Item = Result<Bytes, io::Error>> + Unpin,
-        [u8; 32],
-    ) {
-        // Intentionally not 1024 * 1024
-        // To detect wrong offsets while copying IO data
-        let mut buf = vec![0u8; 1000 * 1000];
-
-        let path = holder.temp_dir.path().join(Uuid::new_v4().to_string());
-        let mut file = std::fs::File::create(&path).unwrap();
-
-        let mut thread_rng = rand::thread_rng();
-        let mut hash = Sha256::new();
-
-        for _ in 0..size {
-            thread_rng.fill_bytes(&mut buf);
-            hash.update(&buf);
-
-            file.write(&buf).unwrap();
-        }
-
-        let file = File::open(path).await.unwrap();
-        let hash: [u8; 32] = hash.finalize().into();
-
-        (ReaderStream::with_capacity(file, 8192), hash)
+    macro_rules! impl_test {
+        ($name: ident) => {
+            #[test_log::test(tokio::test)]
+            async fn $name() {
+                let (repo, holder) = repository();
+                crate::storage::manager::test_utils::$name(repo, holder).await;
+            }
+        };
     }
 
-    #[test(tokio::test)]
-    async fn test_store() {
-        const SIZE: usize = 3;
-
-        let (repo, holder) = repository();
-
-        let (reader, reader_hash) = create_rand_file(&holder, SIZE).await;
-        let id = Uuid::new_v4();
-        let (written, store_hash) = repo.store(id, reader).await.unwrap();
-
-        assert!(
-            reader_hash.iter().eq(store_hash.iter()),
-            "generated incorrect sha256 hash for input"
-        );
-        assert_eq!(
-            written,
-            (SIZE as u64) * 1000 * 1000,
-            "returned incorrect number of written bytes"
-        );
-
-        let reader = repo.fetch(id).await.unwrap();
-        let mut reader = HashRead::<_, Sha256>::new(reader);
-
-        let mut dev_null = File::from_std(tempfile::tempfile().unwrap());
-
-        let written = copy(&mut reader, &mut dev_null).await.unwrap();
-        let fetch_hash: [u8; 32] = reader.hash_into();
-
-        assert_eq!(
-            written,
-            (SIZE as u64) * 1000 * 1000,
-            "returned incorrect number of written bytes"
-        );
-        assert!(
-            reader_hash.iter().eq(fetch_hash.iter()),
-            "stream hash mismatches the created file one",
-        );
-    }
-
-    #[test(tokio::test)]
-    async fn test_delete() {
-        const SIZE: usize = 1;
-
-        let (repo, holder) = repository();
-
-        let id = Uuid::new_v4();
-
-        let file_res = repo.fetch(id).await;
-        assert!(
-            matches!(file_res, Err(e) if matches!(e, ObjectError::NotFound)),
-            "expected ObjectError::NotFound for inexistent file",
-        );
-
-        let (reader, _) = create_rand_file(&holder, SIZE).await;
-        repo.store(id, reader).await.unwrap();
-
-        repo.fetch(id).await.expect("could not fetch created file");
-        repo.delete(id)
-            .await
-            .expect("could not delete created file");
-
-        let file_res = repo.fetch(id).await;
-        assert!(
-            matches!(file_res, Err(e) if matches!(e, ObjectError::NotFound)),
-            "expected ObjectError::NotFound for deleted file",
-        );
-    }
+    impl_test!(test_store);
+    impl_test!(test_delete);
 }

@@ -3,7 +3,8 @@ use std::{io, task::Poll};
 use bytes::{Bytes, BytesMut};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use downloader::{
-    config::StorageConfig, storage::manager::ObjectManager,
+    config::StorageConfig,
+    storage::manager::{Manager, ObjectManager},
     utils::serde::ResolvedPath,
 };
 use futures_util::Stream;
