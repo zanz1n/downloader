@@ -1,29 +1,25 @@
 use std::{error::Error, io::ErrorKind, path::Path, sync::Arc};
 
-use auth::{repository::TokenRepository, routes::auth_routes};
 use axum::{Extension, Router};
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
-use config::{Args, Config};
-use jsonwebtoken::Algorithm;
-use server::layer_root_router;
-use sqlx::{migrate, SqlitePool};
-use storage::{
-    manager::ObjectManager, repository::ObjectRepository, routes::file_routes,
+use downloader::{
+    auth::{repository::TokenRepository, routes::auth_routes},
+    config::{self, Args, Config},
+    fatal,
+    server::layer_root_router,
+    storage::{
+        manager::ObjectManager, repository::ObjectRepository,
+        routes::file_routes,
+    },
+    user::{repository::UserRepository, routes::user_routes},
+    utils::{crypto::fetch_jwt_key_files, sys::shutdown_signal},
 };
+use jsonwebtoken::Algorithm;
+use sqlx::{migrate, SqlitePool};
 use tokio::{runtime::Builder, select};
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
-use user::{repository::UserRepository, routes::user_routes};
-use utils::{crypto::fetch_jwt_key_files, sys::shutdown_signal};
-
-mod auth;
-mod config;
-mod errors;
-mod server;
-mod storage;
-mod user;
-mod utils;
 
 async fn run_http(cfg: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
     let manager = ObjectManager::new(&cfg.storage);
