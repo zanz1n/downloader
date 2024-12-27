@@ -256,6 +256,8 @@ async fn verify_password(
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use sqlx::{migrate, Sqlite, SqlitePool};
     use test_log::test;
     use uuid::Uuid;
@@ -336,6 +338,8 @@ mod tests {
         let data = rand_data();
         let user = repo.create(Permission::ADMIN, data.clone()).await.unwrap();
 
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
         let new_perm = Permission::UNPRIVILEGED.union(Permission::WRITE_USERS);
         let fetched_user =
             repo.update_permission(user.id, new_perm).await.unwrap();
@@ -367,6 +371,8 @@ mod tests {
 
         let data = rand_data();
         let user = repo.create(Permission::ADMIN, data.clone()).await.unwrap();
+
+        tokio::time::sleep(Duration::from_millis(10)).await;
 
         let new_passwd = rand_string();
         let fetched_user = repo

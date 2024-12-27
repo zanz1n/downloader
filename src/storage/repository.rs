@@ -249,6 +249,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use sha2::{Digest, Sha256};
     use sqlx::{migrate, Pool, Sqlite};
     use test_log::test;
@@ -456,6 +458,8 @@ mod tests {
 
         let mut old_obj = obj.clone();
 
+        tokio::time::sleep(Duration::from_millis(10)).await;
+
         let obj = repo.update(obj.id, data.clone()).await.unwrap();
         assert!(
             obj.updated_at > old_obj.updated_at,
@@ -482,6 +486,8 @@ mod tests {
 
         let new_name = rand_string();
         let new_mime_type = rand_mime();
+
+        tokio::time::sleep(Duration::from_millis(10)).await;
 
         let obj = repo
             .update_info(old_obj.id, new_name.clone(), new_mime_type.clone())
